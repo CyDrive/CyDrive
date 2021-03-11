@@ -79,8 +79,10 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: _homeViews.elementAt(_selectedIndex),
-      ),
+          child: IndexedStack(
+        index: _selectedIndex,
+        children: _homeViews,
+      )),
       bottomNavigationBar: BottomNavigationBar(
         items: [
           BottomNavigationBarItem(

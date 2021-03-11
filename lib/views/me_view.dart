@@ -8,6 +8,9 @@ class MeView extends StatefulWidget {
 class _MeViewState extends State<MeView> {
   @override
   Widget build(BuildContext context) {
-    return Text('This is me view');
+    return Container(
+      alignment: Alignment.center,
+      child: Text('This is me view'),
+    );
   }
 }

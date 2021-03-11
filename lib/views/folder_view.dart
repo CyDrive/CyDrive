@@ -1,3 +1,6 @@
+import 'dart:html';
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 
 class FolderView extends StatefulWidget {
@@ -6,11 +9,12 @@ class FolderView extends StatefulWidget {
 }
 
 class _FolderViewState extends State<FolderView> {
-  int _times = 0;
+  int _times = Random().nextInt(100);
   @override
   Widget build(BuildContext context) {
-    var res = Text('This is folder view, times=' + _times.toString());
-    _times++;
-    return res;
+    return Container(
+      alignment: Alignment.center,
+      child: Text('This is folder view, times=' + _times.toString()),
+    );
   }
 }
