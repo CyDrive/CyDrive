@@ -1,13 +1,12 @@
-import 'dart:ffi';
 import 'package:json_annotation/json_annotation.dart';
 
 @JsonSerializable()
 class User {
-  Int64 id;
+  int id;
   String username;
   String password;
-  Int64 usage;
-  Int64 cap;
+  int usage;
+  int cap;
 
   @JsonKey(name: 'root_dir')
   String rootDir;

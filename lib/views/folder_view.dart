@@ -1,7 +1,5 @@
-import 'dart:html';
-import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
+import 'package:cydrive/views/file_view.dart';
+import 'package:flutter/material.dart';
 
 class FolderView extends StatefulWidget {
   @override
@@ -9,12 +7,17 @@ class FolderView extends StatefulWidget {
 }
 
 class _FolderViewState extends State<FolderView> {
-  int _times = Random().nextInt(100);
+  List<FileView> fileInfoList = [];
+
   @override
   Widget build(BuildContext context) {
+    for (var i = 0; i < 100; i++) {
+      fileInfoList.add(FileView());
+    }
     return Container(
-      alignment: Alignment.center,
-      child: Text('This is folder view, times=' + _times.toString()),
-    );
+        alignment: Alignment.center,
+        child: ListView(
+          children: fileInfoList,
+        ));
   }
 }
