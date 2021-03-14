@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'client/client.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
@@ -8,7 +9,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  CyDriveClient _client;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -25,7 +27,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.deepPurple,
       ),
-      home: MyHomePage(title: 'CyDrive'),
+      home: MyHomePage(key: Key('home'), title: 'CyDrive'),
     );
   }
 }
@@ -94,11 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _uploadFile,
-        tooltip: 'Upload File',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _uploadFile,
+      //   tooltip: 'Upload File',
+      //   child: Icon(Icons.add),
+      // ), 
     );
   }
 }
