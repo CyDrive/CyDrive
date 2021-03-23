@@ -1,15 +1,13 @@
+library cydrive;
+
 import 'dart:io';
 
 class CyDriveClient {
   HttpClient _httpClient;
 
-  CyDriveClient(){}
+  CyDriveClient() {}
 
-  void login(String username, String passwd){
-  
-  }
+  void login(String username, String passwd) {}
 
-  void list(String folderPath) {
-
-  }
+  void list(String folderPath) {}
 }
