@@ -47,6 +47,10 @@ class _ChannelViewState extends State<ChannelView> {
     if (message.sender == 'phone') {
       return ListTile(
         title: Text(
+          message.sender,
+          textAlign: TextAlign.right,
+        ),
+        subtitle: Text(
           message.content,
           textAlign: TextAlign.right,
         ),
@@ -55,7 +59,8 @@ class _ChannelViewState extends State<ChannelView> {
     } else {
       return ListTile(
         leading: Icon(Icons.computer_sharp),
-        title: Text(message.content),
+        title: Text(message.sender),
+        subtitle: Text(message.content),
       );
     }
   }
