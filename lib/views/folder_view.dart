@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 
 class FolderView extends StatefulWidget {
   final List<FileInfo> fileInfoList;
+  final void Function(FileInfo) onFileTapped;
 
-  FolderView(this.fileInfoList);
+  FolderView( this.fileInfoList, this.onFileTapped);
 
   @override
   _FolderViewState createState() => _FolderViewState();
 }
 
 class _FolderViewState extends State<FolderView> {
-
   @override
   Widget build(BuildContext context) {
     // for (var i = 0; i < 100; i++) {
@@ -33,6 +33,9 @@ class _FolderViewState extends State<FolderView> {
       leading: Icon(Icons.file_copy_sharp),
       title: Text(widget.fileInfoList[index].filename),
       trailing: _buildSizeText(widget.fileInfoList[index].size),
+      onTap: () {
+        widget.onFileTapped(widget.fileInfoList[index]);
+      },
     );
   }
 

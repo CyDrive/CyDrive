@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _selectedIndex = 0;
   static List<Widget> _homeViews = <Widget>[
-    FolderView([]),
+    FolderView([], null),
     ChannelView(),
     MeView(),
   ];
@@ -63,10 +63,18 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if (index == 0) {
-        _client.list(_remoteDirPath);
-      }
+      _client.list(_remoteDirPath).then(
+          (value) => _homeViews[0] = FolderView(value, _onFileItemTapped));
     });
+  }
+
+  void _onFileItemTapped(FileInfo fileInfo) {
+    if (fileInfo.isDir) {
+      _remoteDirPath = fileInfo.filePath;
+      _client.list(_remoteDirPath).then((value) => setState(() {
+            _homeViews[0] = FolderView(value, _onFileItemTapped);
+          }));
+    }
   }
 
   void debugButton() {
@@ -80,9 +88,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _client.login('test', 'testCyDrive').then((value) => {
           if (value)
             {
-              _client
-                  .list(_remoteDirPath)
-                  .then((value) => {_homeViews[0] = FolderView(value)})
+              _client.list(_remoteDirPath).then((value) =>
+                  {_homeViews[0] = FolderView(value, _onFileItemTapped)})
             }
         });
   }

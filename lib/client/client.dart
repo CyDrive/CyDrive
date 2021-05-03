@@ -31,7 +31,7 @@ class CyDriveClient {
   }
 
   Future<List<FileInfo>> list(String folderPath) async {
-    Response<String> resp = await _httpClient.get('/list' + folderPath);
+    Response<String> resp = await _httpClient.get('/list/' + folderPath);
     Map<String, dynamic> json = jsonDecode(resp.data.toString());
     var res = Resp.fromJson(json);
 
