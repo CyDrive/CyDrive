@@ -1,3 +1,4 @@
+import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
 import 'client/client.dart';
 import 'views/folder_view.dart';
@@ -9,8 +10,6 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  CyDriveClient _client;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -51,9 +50,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  CyDriveClient _client = CyDriveClient('http://localhost:6454');
+  String _remoteDirPath = '';
+
   int _selectedIndex = 0;
   static List<Widget> _homeViews = <Widget>[
-    FolderView(),
+    FolderView([]),
     ChannelView(),
     MeView(),
   ];
@@ -61,19 +63,32 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      if (index == 0) {
+        _client.list(_remoteDirPath);
+      }
     });
   }
 
-  void _uploadFile() {}
+  void debugButton() {
+    _client.login('test', 'testCyDrive');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _client.login('test', 'testCyDrive').then((value) => {
+          if (value)
+            {
+              _client
+                  .list(_remoteDirPath)
+                  .then((value) => {_homeViews[0] = FolderView(value)})
+            }
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -96,11 +111,11 @@ class _MyHomePageState extends State<MyHomePage> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _uploadFile,
-      //   tooltip: 'Upload File',
-      //   child: Icon(Icons.add),
-      // ), 
+      floatingActionButton: FloatingActionButton(
+        onPressed: debugButton,
+        tooltip: 'debug',
+        child: Icon(Icons.add),
+      ),
     );
   }
 }

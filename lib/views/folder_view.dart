@@ -4,32 +4,35 @@ import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
 
 class FolderView extends StatefulWidget {
+  final List<FileInfo> fileInfoList;
+
+  FolderView(this.fileInfoList);
+
   @override
   _FolderViewState createState() => _FolderViewState();
 }
 
 class _FolderViewState extends State<FolderView> {
-  final fileInfoList = <FileInfo>[];
 
   @override
   Widget build(BuildContext context) {
-    for (var i = 0; i < 100; i++) {
-      fileInfoList.add(FileInfo());
-      fileInfoList.last.size = Random().nextInt(1 << 30);
-      fileInfoList.last.filename = 'file_' + i.toString();
-    }
+    // for (var i = 0; i < 100; i++) {
+    //   widget.fileInfoList.add(FileInfo());
+    //   widget.fileInfoList.last.size = Random().nextInt(1 << 30);
+    //   widget.fileInfoList.last.filename = 'file_' + i.toString();
+    // }
 
     return ListView.builder(
       itemBuilder: _buildFileItem,
-      itemCount: fileInfoList.length,
+      itemCount: widget.fileInfoList.length,
     );
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
     return ListTile(
       leading: Icon(Icons.file_copy_sharp),
-      title: Text(fileInfoList[index].filename),
-      trailing: _buildSizeText(fileInfoList[index].size),
+      title: Text(widget.fileInfoList[index].filename),
+      trailing: _buildSizeText(widget.fileInfoList[index].size),
     );
   }
 
