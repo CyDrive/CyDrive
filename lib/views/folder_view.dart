@@ -1,4 +1,5 @@
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
 
@@ -13,6 +14,7 @@ class FolderView extends StatefulWidget {
 
 class _FolderViewState extends State<FolderView> {
   List<FileInfo> fileInfoList;
+  BuildContext _context;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +23,7 @@ class _FolderViewState extends State<FolderView> {
     //   widget.fileInfoList.last.size = Random().nextInt(1 << 30);
     //   widget.fileInfoList.last.filename = 'file_' + i.toString();
     // }
+    _context = context;
 
     return FutureBuilder<List<FileInfo>>(
       future: widget.fileInfoList,
@@ -46,7 +49,23 @@ class _FolderViewState extends State<FolderView> {
             child: CircularProgressIndicator(),
           );
         } else {
-          fileInfoList = snapshot.data;
+          fileInfoList = [];
+          if (client.remoteDir.isNotEmpty) {
+            fileInfoList.add(lastDir(client.remoteDir));
+          }
+          fileInfoList.addAll(snapshot.data);
+          fileInfoList.sort((a, b) {
+            if (a.filename == '..') return -1;
+            if (a.isDir != b.isDir) {
+              if (a.isDir) {
+                return -1;
+              } else {
+                return 1;
+              }
+            } else {
+              return a.filename.compareTo(b.filename);
+            }
+          });
           return RefreshIndicator(
               child: ListView.builder(
                 itemBuilder: _buildFileItem,
@@ -65,12 +84,19 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
+    IconData icon = Icons.file_copy_sharp;
+    if (fileInfoList[index].isDir) {
+      icon = Icons.folder_open_sharp;
+    }
     return ListTile(
-      leading: Icon(Icons.file_copy_sharp),
+      leading: Icon(icon),
       title: Text(fileInfoList[index].filename),
       trailing: _buildSizeText(fileInfoList[index].size),
       onTap: () {
         if (fileInfoList[index].isDir) {
+          // var list = client.list(fileInfoList[index].filePath);
+          // Navigator.push(_context,
+          //     MaterialPageRoute(builder: (context) => FolderView(list)));
           client.remoteDir = fileInfoList[index].filePath;
         }
       },

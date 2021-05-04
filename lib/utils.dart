@@ -1,4 +1,5 @@
 import 'package:crypto/crypto.dart';
+import 'models/file.dart';
 
 List<int> md5Hash(List<int> str) {
   return md5.convert(str).bytes;
@@ -16,4 +17,16 @@ String passwordHash(String passwd) {
   }
 
   return res;
+}
+
+FileInfo lastDir(String currentDir) {
+  var pathLevels = currentDir.split('/');
+  pathLevels.removeLast();
+  FileInfo fileInfo = FileInfo();
+  fileInfo.filePath = pathLevels.join('/');
+  fileInfo.filename = '..';
+  fileInfo.size = 0;
+  fileInfo.isDir = true;
+
+  return fileInfo;
 }
