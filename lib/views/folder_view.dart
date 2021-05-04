@@ -1,19 +1,19 @@
-import 'dart:math';
-
 import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
+import 'package:cydrive/globals.dart';
 
 class FolderView extends StatefulWidget {
-  final List<FileInfo> fileInfoList;
-  final void Function(FileInfo) onFileTapped;
+  Future<List<FileInfo>> fileInfoList;
 
-  FolderView( this.fileInfoList, this.onFileTapped);
+  FolderView(this.fileInfoList);
 
   @override
   _FolderViewState createState() => _FolderViewState();
 }
 
 class _FolderViewState extends State<FolderView> {
+  List<FileInfo> fileInfoList;
+
   @override
   Widget build(BuildContext context) {
     // for (var i = 0; i < 100; i++) {
@@ -22,19 +22,57 @@ class _FolderViewState extends State<FolderView> {
     //   widget.fileInfoList.last.filename = 'file_' + i.toString();
     // }
 
-    return ListView.builder(
-      itemBuilder: _buildFileItem,
-      itemCount: widget.fileInfoList.length,
+    return FutureBuilder<List<FileInfo>>(
+      future: widget.fileInfoList,
+      builder: (BuildContext context, AsyncSnapshot<List<FileInfo>> snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Stack(
+              children: [
+                Text(
+                  "failed to connect to the server",
+                  textScaleFactor: 1.5,
+                ),
+                ElevatedButton(
+                    child: Text('retry'),
+                    onPressed: () {
+                      _onRefresh();
+                    })
+              ],
+            ),
+          );
+        } else if (!snapshot.hasData) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        } else {
+          fileInfoList = snapshot.data;
+          return RefreshIndicator(
+              child: ListView.builder(
+                itemBuilder: _buildFileItem,
+                itemCount: fileInfoList.length,
+              ),
+              onRefresh: _onRefresh);
+        }
+      },
     );
+  }
+
+  Future<void> _onRefresh() async {
+    setState(() {
+      widget.fileInfoList = client.list(client.remoteDir);
+    });
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
     return ListTile(
       leading: Icon(Icons.file_copy_sharp),
-      title: Text(widget.fileInfoList[index].filename),
-      trailing: _buildSizeText(widget.fileInfoList[index].size),
+      title: Text(fileInfoList[index].filename),
+      trailing: _buildSizeText(fileInfoList[index].size),
       onTap: () {
-        widget.onFileTapped(widget.fileInfoList[index]);
+        if (fileInfoList[index].isDir) {
+          client.remoteDir = fileInfoList[index].filePath;
+        }
       },
     );
   }

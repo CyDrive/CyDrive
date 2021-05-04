@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 enum MessageType {
   Text,
   Image,

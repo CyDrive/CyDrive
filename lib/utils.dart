@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 List<int> md5Hash(List<int> str) {

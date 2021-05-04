@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 @JsonSerializable()
 class FileInfo {
-  FileInfo() {}
+  FileInfo();
 
   @JsonKey(ignore: true)
   String filename;

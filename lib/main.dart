@@ -1,9 +1,8 @@
-import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
-import 'client/client.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
+import 'globals.dart';
 
 void main() {
   runApp(MyApp());
@@ -50,48 +49,40 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  CyDriveClient _client = CyDriveClient('http://localhost:6454');
-  String _remoteDirPath = '';
-
   int _selectedIndex = 0;
-  static List<Widget> _homeViews = <Widget>[
-    FolderView([], null),
-    ChannelView(),
-    MeView(),
-  ];
+
+  List<Widget> _homeViews;
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      _client.list(_remoteDirPath).then(
-          (value) => _homeViews[0] = FolderView(value, _onFileItemTapped));
+      var list = client.list(client.remoteDir);
+      _homeViews[0] = FolderView(list);
     });
   }
 
-  void _onFileItemTapped(FileInfo fileInfo) {
-    if (fileInfo.isDir) {
-      _remoteDirPath = fileInfo.filePath;
-      _client.list(_remoteDirPath).then((value) => setState(() {
-            _homeViews[0] = FolderView(value, _onFileItemTapped);
-          }));
-    }
-  }
-
   void debugButton() {
-    _client.login('test', 'testCyDrive');
+    client.login('test', 'testCyDrive');
   }
 
   @override
   void initState() {
     super.initState();
 
-    _client.login('test', 'testCyDrive').then((value) => {
-          if (value)
-            {
-              _client.list(_remoteDirPath).then((value) =>
-                  {_homeViews[0] = FolderView(value, _onFileItemTapped)})
-            }
+    _homeViews = [FolderView(null), ChannelView(), MeView()];
+
+    client.login('test', 'testCyDrive').whenComplete(() => {
+          setState(() {
+            _homeViews[0] = FolderView(client.list(client.remoteDir));
+          })
         });
+
+    client.registerCallback((String dirPath) {
+      var list = client.list(dirPath);
+      setState(() {
+        _homeViews[0] = FolderView(list);
+      });
+    });
   }
 
   @override
