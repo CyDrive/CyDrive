@@ -14,17 +14,11 @@ import 'package:path_provider/path_provider.dart';
 class CyDriveClient {
   Dio _httpClient;
   User user = User();
-  String _remoteDir = '';
   Function(String) _onRemoteDirChangeCallback =
       _defaultOnRemoteDirChangeCallback;
 
-  String get remoteDir {
-    return _remoteDir;
-  }
-
-  set remoteDir(String dirPath) {
-    _remoteDir = dirPath;
-    _onRemoteDirChangeCallback(_remoteDir);
+  onRemoteDirChange(String dirPath) {
+    _onRemoteDirChangeCallback(dirPath);
   }
 
   static _defaultOnRemoteDirChangeCallback(String dirPath) {}
@@ -74,7 +68,7 @@ class CyDriveClient {
 
       if (res.status != 0 && shouldRetry) {
         if (await login(user.username, user.password)) {
-          return list(remoteDir, shouldRetry: false);
+          return list(folderPath, shouldRetry: false);
         } else {
           return Future.error("can't connect to the server");
         }

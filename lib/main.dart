@@ -1,3 +1,4 @@
+import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
@@ -25,22 +26,18 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.deepPurple,
       ),
-      home: MyHomePage(key: Key('home'), title: 'CyDrive'),
+      home: MyHomePage(key: Key('home'), title: ''),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  // title is the current dir path
+  // empty title => root path
+  // and in the case display CyDrive
+  MyHomePage({Key key, this.title}) : super(key: key) {
+    client.login('test', 'testCyDrive');
+  }
 
   final String title;
 
@@ -50,14 +47,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-
-  List<Widget> _homeViews;
+  Future<List<FileInfo>> fileInfoList = Future.value([]);
 
   void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
     setState(() {
       _selectedIndex = index;
-      var list = client.list(client.remoteDir);
-      _homeViews[0] = FolderView(list);
+      fileInfoList = client.list(widget.title);
     });
   }
 
@@ -69,38 +65,35 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    _homeViews = [FolderView(null), ChannelView(), MeView()];
-
-    client.login('test', 'testCyDrive').whenComplete(() => {
-          setState(() {
-            _homeViews[0] = FolderView(client.list(client.remoteDir));
-          })
-        });
-
-    client.registerCallback((String dirPath) {
-      var list = client.list(dirPath);
-      setState(() {
-        _homeViews[0] = FolderView(list);
-      });
-    });
+    fileInfoList = client.list(widget.title);
   }
 
   @override
   Widget build(BuildContext context) {
-    String title = widget.title;
-    if (client.remoteDir.isNotEmpty) {
-      title = client.remoteDir;
-    }
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(title),
+        title: Text(widget.title),
       ),
       body: Center(
           child: IndexedStack(
         index: _selectedIndex,
-        children: _homeViews,
+        children: [
+          FolderView(fileInfoList, widget.title, (FileInfo fileInfo) {
+            if (fileInfo.isDir) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => MyHomePage(
+                            key: widget.key,
+                            title: fileInfo.filePath,
+                          )));
+            }
+          }),
+          ChannelView(),
+          MeView(),
+        ],
       )),
       bottomNavigationBar: BottomNavigationBar(
         items: [

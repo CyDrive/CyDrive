@@ -4,29 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
 
 class FolderView extends StatefulWidget {
-  Future<List<FileInfo>> fileInfoList;
+  final Future<List<FileInfo>> fileInfoList;
+  final remoteDir;
+  final Function(FileInfo fileInfo) onItemTapped;
 
-  FolderView(this.fileInfoList);
+  FolderView(this.fileInfoList, this.remoteDir, this.onItemTapped);
 
   @override
   _FolderViewState createState() => _FolderViewState();
 }
 
 class _FolderViewState extends State<FolderView> {
-  List<FileInfo> fileInfoList;
-  BuildContext _context;
+  Future<List<FileInfo>> _fileInfoListF;
+  List<FileInfo> _fileInfoList;
+
+  @override
+  void initState() {
+    super.initState();
+    _fileInfoListF = widget.fileInfoList;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // for (var i = 0; i < 100; i++) {
-    //   widget.fileInfoList.add(FileInfo());
-    //   widget.fileInfoList.last.size = Random().nextInt(1 << 30);
-    //   widget.fileInfoList.last.filename = 'file_' + i.toString();
-    // }
-    _context = context;
-
     return FutureBuilder<List<FileInfo>>(
-      future: widget.fileInfoList,
+      future: _fileInfoListF,
       builder: (BuildContext context, AsyncSnapshot<List<FileInfo>> snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -49,12 +50,12 @@ class _FolderViewState extends State<FolderView> {
             child: CircularProgressIndicator(),
           );
         } else {
-          fileInfoList = [];
-          if (client.remoteDir.isNotEmpty) {
-            fileInfoList.add(lastDir(client.remoteDir));
-          }
-          fileInfoList.addAll(snapshot.data);
-          fileInfoList.sort((a, b) {
+          _fileInfoList = snapshot.data;
+          // if (client.remoteDir.isNotEmpty) {
+          //   fileInfoList.add(lastDir(client.remoteDir));
+          // }
+          // fileInfoList.addAll(snapshot.data);
+          _fileInfoList.sort((a, b) {
             if (a.filename == '..') return -1;
             if (a.isDir != b.isDir) {
               if (a.isDir) {
@@ -69,7 +70,7 @@ class _FolderViewState extends State<FolderView> {
           return RefreshIndicator(
               child: ListView.builder(
                 itemBuilder: _buildFileItem,
-                itemCount: fileInfoList.length,
+                itemCount: _fileInfoList.length,
               ),
               onRefresh: _onRefresh);
         }
@@ -79,26 +80,21 @@ class _FolderViewState extends State<FolderView> {
 
   Future<void> _onRefresh() async {
     setState(() {
-      widget.fileInfoList = client.list(client.remoteDir);
+      _fileInfoListF = client.list(widget.remoteDir);
     });
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
     IconData icon = Icons.file_copy_sharp;
-    if (fileInfoList[index].isDir) {
+    if (_fileInfoList[index].isDir) {
       icon = Icons.folder_open_sharp;
     }
     return ListTile(
       leading: Icon(icon),
-      title: Text(fileInfoList[index].filename),
-      trailing: _buildSizeText(fileInfoList[index].size),
+      title: Text(_fileInfoList[index].filename),
+      trailing: _buildSizeText(_fileInfoList[index].size),
       onTap: () {
-        if (fileInfoList[index].isDir) {
-          // var list = client.list(fileInfoList[index].filePath);
-          // Navigator.push(_context,
-          //     MaterialPageRoute(builder: (context) => FolderView(list)));
-          client.remoteDir = fileInfoList[index].filePath;
-        }
+        widget.onItemTapped(_fileInfoList[index]);
       },
     );
   }
