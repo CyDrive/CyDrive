@@ -19,14 +19,8 @@ String passwordHash(String passwd) {
   return res;
 }
 
-FileInfo lastDir(String currentDir) {
-  var pathLevels = currentDir.split('/');
+String parentPath(String path) {
+  var pathLevels = path.split('/');
   pathLevels.removeLast();
-  FileInfo fileInfo = FileInfo();
-  fileInfo.filePath = pathLevels.join('/');
-  fileInfo.filename = '..';
-  fileInfo.size = 0;
-  fileInfo.isDir = true;
-
-  return fileInfo;
+  return pathLevels.join('/');
 }

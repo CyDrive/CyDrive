@@ -1,9 +1,14 @@
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/views/image_page.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
 import 'globals.dart';
+import 'dart:io';
 
 void main() {
   runApp(MyApp());
@@ -12,6 +17,8 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // mimeTypeResolver.addExtension('md', 'text/plain');
+
     return MaterialApp(
       title: 'CyDrive',
       theme: ThemeData(
@@ -36,7 +43,7 @@ class MyHomePage extends StatefulWidget {
   // empty title => root path
   // and in the case display CyDrive
   MyHomePage({Key key, this.title}) : super(key: key) {
-    client.login('test', 'testCyDrive');
+    client.login('yah01', 'Youarehacked01');
   }
 
   final String title;
@@ -70,11 +77,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    String title = 'CyDrive';
+    if (widget.title.isNotEmpty) {
+      title = widget.title;
+    }
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text(title),
+        actions: [
+          _appBarPopMenuButton(),
+        ],
       ),
       body: Center(
           child: IndexedStack(
@@ -89,6 +104,17 @@ class _MyHomePageState extends State<MyHomePage> {
                             key: widget.key,
                             title: fileInfo.filePath,
                           )));
+            } else {
+              getApplicationDocumentsDirectory().then((value) {
+                if (!File(value.path + fileInfo.filePath).existsSync()) {
+                  client.download(fileInfo.filePath).whenComplete(() =>
+                      OpenFile.open(value.path + fileInfo.filePath,
+                          type: lookupMimeType(fileInfo.filename)));
+                } else {
+                  OpenFile.open(value.path + fileInfo.filePath,
+                      type: lookupMimeType(fileInfo.filename));
+                }
+              });
             }
           }),
           ChannelView(),
@@ -112,5 +138,12 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _appBarPopMenuButton() {
+    return PopupMenuButton(
+        itemBuilder: (BuildContext context) => [
+              PopupMenuItem(child: Text('New Folder')),
+            ]);
   }
 }

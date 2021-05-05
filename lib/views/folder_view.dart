@@ -1,5 +1,4 @@
 import 'package:cydrive/models/file.dart';
-import 'package:cydrive/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
 
@@ -85,28 +84,36 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
-    IconData icon = Icons.file_copy_sharp;
+    IconData iconData = Icons.file_copy_sharp;
     if (_fileInfoList[index].isDir) {
-      icon = Icons.folder_open_sharp;
+      iconData = Icons.folder_open_sharp;
     }
+    Icon icon = Icon(iconData);
+
     return ListTile(
-      leading: Icon(icon),
+      leading: icon,
       title: Text(_fileInfoList[index].filename),
-      trailing: _buildSizeText(_fileInfoList[index].size),
+      trailing: _buildSizeText(_fileInfoList[index]),
       onTap: () {
         widget.onItemTapped(_fileInfoList[index]);
+      },
+      onLongPress: () {
+        
       },
     );
   }
 
-  Widget _buildSizeText(int size) {
+  Widget _buildSizeText(FileInfo fileInfo) {
+    if (fileInfo.isDir) {
+      return Text('');
+    }
     const units = ["B", "KiB", "MiB", "GiB"];
     int unitIndex = 0;
-    while (unitIndex + 1 < units.length && size >= 1024) {
-      size >>= 10;
+    while (unitIndex + 1 < units.length && fileInfo.size >= 1024) {
+      fileInfo.size >>= 10;
       unitIndex++;
     }
 
-    return Text(size.toString() + ' ' + units[unitIndex]);
+    return Text(fileInfo.size.toString() + ' ' + units[unitIndex]);
   }
 }
