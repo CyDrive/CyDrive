@@ -33,6 +33,11 @@ dependencies:
   crypto: ^3.0.1
   dio_cookie_manager: ^2.0.0
   cookie_jar: ^3.0.1
+  path_provider: ^2.0.1
+  path: ^1.8.0
+  open_file: ^3.2.0
+  share: ^2.0.1
+  mime: ^1.0.0
 
 dev_dependencies:
   flutter_test:

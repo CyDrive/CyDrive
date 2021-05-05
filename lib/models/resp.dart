@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 class Resp {
   int status;
   String msg;

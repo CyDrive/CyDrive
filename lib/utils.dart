@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'models/file.dart';
 
 List<int> md5Hash(List<int> str) {
   return md5.convert(str).bytes;
@@ -17,4 +17,10 @@ String passwordHash(String passwd) {
   }
 
   return res;
+}
+
+String parentPath(String path) {
+  var pathLevels = path.split('/');
+  pathLevels.removeLast();
+  return pathLevels.join('/');
 }

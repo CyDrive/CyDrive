@@ -1,9 +1,14 @@
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/views/image_page.dart';
 import 'package:flutter/material.dart';
-import 'client/client.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
+import 'globals.dart';
+import 'dart:io';
 
 void main() {
   runApp(MyApp());
@@ -12,6 +17,8 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // mimeTypeResolver.addExtension('md', 'text/plain');
+
     return MaterialApp(
       title: 'CyDrive',
       theme: ThemeData(
@@ -26,22 +33,18 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.deepPurple,
       ),
-      home: MyHomePage(key: Key('home'), title: 'CyDrive'),
+      home: MyHomePage(key: Key('home'), title: ''),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  // title is the current dir path
+  // empty title => root path
+  // and in the case display CyDrive
+  MyHomePage({Key key, this.title}) : super(key: key) {
+    client.login('yah01', 'Youarehacked01');
+  }
 
   final String title;
 
@@ -50,55 +53,73 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  CyDriveClient _client = CyDriveClient('http://localhost:6454');
-  String _remoteDirPath = '';
-
   int _selectedIndex = 0;
-  static List<Widget> _homeViews = <Widget>[
-    FolderView([]),
-    ChannelView(),
-    MeView(),
-  ];
+  Future<List<FileInfo>> fileInfoList = Future.value([]);
 
   void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
     setState(() {
       _selectedIndex = index;
-      if (index == 0) {
-        _client.list(_remoteDirPath);
-      }
+      fileInfoList = client.list(widget.title);
     });
   }
 
   void debugButton() {
-    _client.login('test', 'testCyDrive');
+    client.login('test', 'testCyDrive');
   }
 
   @override
   void initState() {
     super.initState();
 
-    _client.login('test', 'testCyDrive').then((value) => {
-          if (value)
-            {
-              _client
-                  .list(_remoteDirPath)
-                  .then((value) => {_homeViews[0] = FolderView(value)})
-            }
-        });
+    fileInfoList = client.list(widget.title);
   }
 
   @override
   Widget build(BuildContext context) {
+    String title = 'CyDrive';
+    if (widget.title.isNotEmpty) {
+      title = widget.title;
+    }
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text(title),
+        actions: [
+          _appBarPopMenuButton(),
+        ],
       ),
       body: Center(
           child: IndexedStack(
         index: _selectedIndex,
-        children: _homeViews,
+        children: [
+          FolderView(fileInfoList, widget.title, (FileInfo fileInfo) {
+            if (fileInfo.isDir) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => MyHomePage(
+                            key: widget.key,
+                            title: fileInfo.filePath,
+                          )));
+            } else {
+              getApplicationDocumentsDirectory().then((value) {
+                if (!File(value.path + fileInfo.filePath).existsSync()) {
+                  client.download(fileInfo.filePath).whenComplete(() =>
+                      OpenFile.open(value.path + fileInfo.filePath,
+                          type: lookupMimeType(fileInfo.filename)));
+                } else {
+                  OpenFile.open(value.path + fileInfo.filePath,
+                      type: lookupMimeType(fileInfo.filename));
+                }
+              });
+            }
+          }),
+          ChannelView(),
+          MeView(),
+        ],
       )),
       bottomNavigationBar: BottomNavigationBar(
         items: [
@@ -117,5 +138,12 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _appBarPopMenuButton() {
+    return PopupMenuButton(
+        itemBuilder: (BuildContext context) => [
+              PopupMenuItem(child: Text('New Folder')),
+            ]);
   }
 }
