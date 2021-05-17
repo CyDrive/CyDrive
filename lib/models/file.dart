@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:json_annotation/json_annotation.dart';
+import 'package:path/path.dart';
+import 'package:cydrive/globals.dart';
 
 @JsonSerializable()
 class FileInfo {
@@ -32,7 +36,21 @@ class FileInfo {
     isDir = json['is_dir'];
     isCompressed = json['is_compressed'];
 
-    filename = filePath.split('/').last;
+    filename = basename(filePath);
+  }
+
+  FileInfo.fromFile(String absPath) {
+    var file = File(absPath);
+    file.stat().then((stat) {
+      fileMode = stat.mode;
+      modifyTime = stat.modified.millisecondsSinceEpoch ~/ 1000;
+      size = stat.size;
+      isDir = stat.type == FileSystemEntityType.directory;
+    });
+    filePath = relative(absPath, from: filesDirPath);
+    isCompressed = false;
+
+    filename = basename(filePath);
   }
 
   Map<String, dynamic> toJson() => {

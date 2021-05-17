@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cydrive/consts.dart';
 import 'package:cydrive/models/file.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
@@ -6,8 +9,10 @@ class FolderView extends StatefulWidget {
   final Future<List<FileInfo>> fileInfoList;
   final remoteDir;
   final Function(FileInfo fileInfo) onItemTapped;
+  final ListFilter filter;
 
-  FolderView(this.fileInfoList, this.remoteDir, this.onItemTapped);
+  FolderView(this.fileInfoList, this.remoteDir, this.onItemTapped,
+      {this.filter = ListFilter.All});
 
   @override
   _FolderViewState createState() => _FolderViewState();
@@ -30,7 +35,8 @@ class _FolderViewState extends State<FolderView> {
       builder: (BuildContext context, AsyncSnapshot<List<FileInfo>> snapshot) {
         if (snapshot.hasError) {
           return Center(
-            child: Stack(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   "failed to connect to the server",
@@ -69,7 +75,17 @@ class _FolderViewState extends State<FolderView> {
           return RefreshIndicator(
               child: ListView.builder(
                 itemBuilder: _buildFileItem,
-                itemCount: _fileInfoList.length,
+                itemCount: _fileInfoList.where((element) {
+                  switch (widget.filter) {
+                    case ListFilter.All:
+                      return true;
+                    case ListFilter.OnlyDir:
+                      return element.isDir;
+                    case ListFilter.OnlyFile:
+                      return !element.isDir;
+                  }
+                  return false;
+                }).length,
               ),
               onRefresh: _onRefresh);
         }
@@ -85,10 +101,16 @@ class _FolderViewState extends State<FolderView> {
 
   Widget _buildFileItem(BuildContext context, int index) {
     IconData iconData = Icons.file_copy_sharp;
+    Color color = ThemeData().iconTheme.color;
+
     if (_fileInfoList[index].isDir) {
       iconData = Icons.folder_open_sharp;
     }
-    Icon icon = Icon(iconData);
+    if (File(filesDirPath + _fileInfoList[index].filePath).existsSync()) {
+      color = Color(Colors.greenAccent.value);
+    }
+
+    Icon icon = Icon(iconData, color: color);
 
     return ListTile(
       leading: icon,
@@ -97,9 +119,7 @@ class _FolderViewState extends State<FolderView> {
       onTap: () {
         widget.onItemTapped(_fileInfoList[index]);
       },
-      onLongPress: () {
-        
-      },
+      onLongPress: () {},
     );
   }
 

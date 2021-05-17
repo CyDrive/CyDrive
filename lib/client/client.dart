@@ -1,7 +1,10 @@
 library cydrive;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:cydrive/consts.dart';
 import 'package:cydrive/utils.dart';
 import 'package:dio/dio.dart';
 import 'package:cydrive/models/resp.dart';
@@ -9,26 +12,45 @@ import 'package:cydrive/models/file.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:cydrive/models/user.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+
+import '../globals.dart';
+
+enum TaskType {
+  Download,
+  Upload,
+}
+
+class Task {
+  int id;
+  FileInfo fileInfo;
+  TaskType type;
+  int doneBytes;
+
+  Socket socket;
+
+  Task(this.id, this.fileInfo, this.type, {this.doneBytes = 0});
+}
 
 class CyDriveClient {
   Dio _httpClient = Dio();
-  User _user = User();
-  String _appDocDirPath;
+  String _username;
+  String _password;
+  Map<int, Task> _taskMap = Map();
 
   CyDriveClient(String serverAddr) {
     getApplicationDocumentsDirectory().then((value) {
-      _appDocDirPath = value.path;
-      _httpClient.interceptors.add(CookieManager(
-          PersistCookieJar(storage: FileStorage(_appDocDirPath))));
+      _httpClient.interceptors.add(
+          CookieManager(PersistCookieJar(storage: FileStorage(value.path))));
     });
     _httpClient.options.baseUrl = serverAddr;
     _httpClient.options.connectTimeout = 1000;
   }
 
-  Future<bool> login(String username, String passwd) async {
-    _user.username = username;
-    _user.password = passwd;
+  Future<User> login(String username, String passwd) async {
+    _username = username;
+    _password = passwd;
 
     try {
       Response<String> resp = await _httpClient.post('/login',
@@ -38,7 +60,13 @@ class CyDriveClient {
       Map<String, dynamic> json = jsonDecode(resp.data);
       var res = Resp.fromJson(json);
 
-      return res.status == 0;
+      if (res.status != 0) {
+        return null;
+      }
+
+      json = jsonDecode(res.data);
+      var user = User.fromJson(json);
+      return user;
     } catch (err) {
       return Future.error("can't connect to the server");
     }
@@ -53,7 +81,7 @@ class CyDriveClient {
       var res = Resp.fromJson(json);
 
       if (res.status != 0 && shouldRetry) {
-        if (await login(_user.username, _user.password)) {
+        if (await login(_username, _password) != null) {
           return list(folderPath, shouldRetry: false);
         } else {
           return Future.error("can't connect to the server");
@@ -71,18 +99,78 @@ class CyDriveClient {
     }
   }
 
-  Future<void> download(String filePath, {bool shouldRetry = true}) async {
+  Future<FileInfo> download(String filePath, {bool shouldRetry = true}) async {
     try {
       // var fileList = Directory(_appDocDirPath).listSync();
-      String storePath = _appDocDirPath + filePath;
-      // var dir = Directory(parentPath(storePath));
-      // dir.createSync(recursive: true);
-      await _httpClient.download('/file/' + filePath, storePath);
-      // fileList = dir.listSync();
-      // stderr.writeln(fileList);
+
+      Response<String> resp = await _httpClient.get('/file/' + filePath);
+      Map<String, dynamic> json = jsonDecode(resp.data.toString());
+      var res = Resp.fromJson(json);
+
+      if (res.status != 0) {
+        stderr.writeln(res.msg);
+        return null;
+      }
+
+      String storePath = filesDirPath + filePath;
+      var dir = Directory(parentPath(storePath));
+      dir.createSync(recursive: true);
+
+      json = jsonDecode(res.data);
+      var fileInfo = FileInfo.fromJson(json);
+
+      var taskId = int.parse(res.msg);
+      var task = Task(taskId, fileInfo, TaskType.Download, doneBytes: 0);
+
+      _taskMap[taskId] = task;
+
+      _downloadTask(task);
+
+      return fileInfo;
     } catch (err) {
       stderr.writeln(err);
       throw ("occures error when downloading: $err");
     }
+  }
+
+  Future<void> upload(String filePath, String remotePath,
+      {bool shouldRetry = true}) async {
+    try {
+      File file = File(filePath);
+      Options option =
+          Options(headers: {"Content-Type": "multipart/form-data"});
+
+      await _httpClient.put('/file/' + remotePath,
+          data: file.readAsBytesSync(), options: option);
+    } catch (err) {
+      stderr.writeln(err);
+      throw ("occures error when uploading: $err");
+    }
+  }
+
+  void _downloadTask(Task task) async {
+    String storePath = filesDirPath + '/' + task.fileInfo.filePath;
+
+    File file = File(storePath);
+    task.socket = await Socket.connect(kHost, kCyDriveFtmPort);
+
+    // send task id
+    var bdata = ByteData(8);
+    bdata.setInt64(0, task.id, Endian.little);
+    task.socket.add(bdata.buffer.asUint8List());
+
+    // transfer file
+    task.socket.flush().whenComplete(() {
+      var stream = task.socket.asBroadcastStream();
+      var fileWriter = file.openWrite(mode: FileMode.writeOnlyAppend);
+
+      fileWriter.addStream(stream).whenComplete(() {
+        fileWriter.flush().whenComplete(() {
+          fileWriter.close();
+        });
+      }).onError((error, stackTrace) {
+        stderr.writeln(error);
+      });
+    });
   }
 }

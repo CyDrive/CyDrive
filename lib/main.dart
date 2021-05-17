@@ -1,4 +1,9 @@
+import 'dart:async';
+
+import 'package:cydrive/consts.dart';
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/views/dir_picker.dart';
+import 'package:cydrive/views/file_transfer_page.dart';
 import 'package:cydrive/views/image_page.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -9,6 +14,7 @@ import 'views/channel_view.dart';
 import 'views/me_view.dart';
 import 'globals.dart';
 import 'dart:io';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 void main() {
   runApp(MyApp());
@@ -43,7 +49,12 @@ class MyHomePage extends StatefulWidget {
   // empty title => root path
   // and in the case display CyDrive
   MyHomePage({Key key, this.title}) : super(key: key) {
-    client.login('yah01', 'Youarehacked01');
+    client.login('test', 'testCyDrive').then((value) {
+      user = value;
+    });
+    getApplicationSupportDirectory().then((value) {
+      filesDirPath = value.path;
+    });
   }
 
   final String title;
@@ -54,25 +65,22 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-  Future<List<FileInfo>> fileInfoList = Future.value([]);
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-    setState(() {
-      _selectedIndex = index;
-      fileInfoList = client.list(widget.title);
-    });
-  }
-
-  void debugButton() {
-    client.login('test', 'testCyDrive');
-  }
+  StreamSubscription _intentDataStreamSubscription;
+  Future<List<FileInfo>> _fileInfoList = Future.value([]);
 
   @override
   void initState() {
     super.initState();
 
-    fileInfoList = client.list(widget.title);
+    _fileInfoList = client.list(widget.title);
+    ReceiveSharingIntent.getMediaStream().listen(recvSharedFileHandle);
+    ReceiveSharingIntent.getInitialMedia().then(recvSharedFileHandle);
+  }
+
+  @override
+  void dispose() {
+    _intentDataStreamSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -95,28 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child: IndexedStack(
         index: _selectedIndex,
         children: [
-          FolderView(fileInfoList, widget.title, (FileInfo fileInfo) {
-            if (fileInfo.isDir) {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => MyHomePage(
-                            key: widget.key,
-                            title: fileInfo.filePath,
-                          )));
-            } else {
-              getApplicationDocumentsDirectory().then((value) {
-                if (!File(value.path + fileInfo.filePath).existsSync()) {
-                  client.download(fileInfo.filePath).whenComplete(() =>
-                      OpenFile.open(value.path + fileInfo.filePath,
-                          type: lookupMimeType(fileInfo.filename)));
-                } else {
-                  OpenFile.open(value.path + fileInfo.filePath,
-                      type: lookupMimeType(fileInfo.filename));
-                }
-              });
-            }
-          }),
+          FolderView(_fileInfoList, widget.title, onListItemTapped()),
           ChannelView(),
           MeView(),
         ],
@@ -140,10 +127,81 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
+    setState(() {
+      _selectedIndex = index;
+      _fileInfoList = client.list(widget.title);
+    });
+  }
+
+  void debugButton() {
+    client.login('test', 'testCyDrive');
+  }
+
+  Function(FileInfo fileInfo) onListItemTapped(
+      {ListFilter filter = ListFilter.All, bool chooseFolder = false}) {
+    if (chooseFolder) {
+      return (FileInfo fileInfo) {};
+    } else {
+      return (FileInfo fileInfo) {
+        if (fileInfo.isDir) {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MyHomePage(
+                        key: widget.key,
+                        title: fileInfo.filePath,
+                      )));
+        } else {
+          if (!File(filesDirPath + fileInfo.filePath).existsSync()) {
+            client.download(fileInfo.filePath).whenComplete(() {}
+                // OpenFile.open(value.path + fileInfo.filePath,
+                //     type: lookupMimeType(fileInfo.filename))
+                );
+          } else {
+            OpenFile.open(filesDirPath + fileInfo.filePath,
+                type: lookupMimeType(fileInfo.filename));
+          }
+        }
+      };
+    }
+  }
+
+  void recvSharedFileHandle(List<SharedMediaFile> sharedFiles) {
+    if (sharedFiles.isEmpty) {
+      return;
+    }
+    stderr.writeln(sharedFiles.map((e) => e.path).join("\n"));
+    Navigator.push(context,
+            MaterialPageRoute(builder: (context) => DirPickerPage("/")))
+        .then((value) {
+      for (var mediaFile in sharedFiles) {
+        client.upload(mediaFile.path, value);
+      }
+    });
+  }
+
   Widget _appBarPopMenuButton() {
     return PopupMenuButton(
-        itemBuilder: (BuildContext context) => [
-              PopupMenuItem(child: Text('New Folder')),
-            ]);
+      itemBuilder: (BuildContext context) => [
+        PopupMenuItem(
+          child: Text('New Folder'),
+          value: 0,
+        ),
+        PopupMenuItem(
+          child: Text('Tasks'),
+          value: 1,
+        )
+      ],
+      onSelected: (index) {
+        switch (index) {
+          case 1:
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => FileTransferPage()));
+            break;
+        }
+      },
+    );
   }
 }
