@@ -4,19 +4,22 @@ import 'package:json_annotation/json_annotation.dart';
 class User {
   int id;
   String username;
-  String password;
   int usage;
   int cap;
 
-  @JsonKey(name: 'root_dir')
-  String rootDir;
+  User.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    username = json['username'];
+    usage = json['usage'];
+    cap = json['cap'];
+  }
 
-  @JsonKey(name: 'work_dir')
-  String workDir;
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'username': username,
+        'usage': usage,
+        'cap': cap,
+      };
 
-  @JsonKey(name: 'created_at')
-  DateTime createdAt;
-
-  @JsonKey(name: 'updated_at')
-  DateTime updatedAt;
+  User();
 }

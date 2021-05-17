@@ -1,5 +1,4 @@
 import 'package:crypto/crypto.dart';
-import 'models/file.dart';
 
 List<int> md5Hash(List<int> str) {
   return md5.convert(str).bytes;
@@ -23,4 +22,15 @@ String parentPath(String path) {
   var pathLevels = path.split('/');
   pathLevels.removeLast();
   return pathLevels.join('/');
+}
+
+String sizeString(int size) {
+  const units = ["B", "KiB", "MiB", "GiB"];
+  int unitIndex = 0;
+  while (unitIndex + 1 < units.length && size >= 1024) {
+    size >>= 10;
+    unitIndex++;
+  }
+
+  return size.toString() + ' ' + units[unitIndex];
 }
