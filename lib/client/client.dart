@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cydrive/consts.dart';
+import 'package:cydrive/models/task.dart';
 import 'package:cydrive/utils.dart';
 import 'package:dio/dio.dart';
 import 'package:cydrive/models/resp.dart';
@@ -12,32 +13,18 @@ import 'package:cydrive/models/file.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:cydrive/models/user.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../globals.dart';
-
-enum TaskType {
-  Download,
-  Upload,
-}
-
-class Task {
-  int id;
-  FileInfo fileInfo;
-  TaskType type;
-  int doneBytes;
-
-  Socket socket;
-
-  Task(this.id, this.fileInfo, this.type, {this.doneBytes = 0});
-}
 
 class CyDriveClient {
   Dio _httpClient = Dio();
   String _username;
   String _password;
-  Map<int, Task> _taskMap = Map();
+  Map<int, Task> taskMap = Map();
 
   CyDriveClient(String serverAddr) {
     getApplicationDocumentsDirectory().then((value) {
@@ -122,7 +109,7 @@ class CyDriveClient {
       var taskId = int.parse(res.msg);
       var task = Task(taskId, fileInfo, TaskType.Download, doneBytes: 0);
 
-      _taskMap[taskId] = task;
+      taskMap[taskId] = task;
 
       _downloadTask(task);
 
@@ -136,12 +123,23 @@ class CyDriveClient {
   Future<void> upload(String filePath, String remotePath,
       {bool shouldRetry = true}) async {
     try {
-      File file = File(filePath);
-      Options option =
-          Options(headers: {"Content-Type": "multipart/form-data"});
+      var fileInfo = FileInfo.fromFile(filePath);
 
-      await _httpClient.put('/file/' + remotePath,
-          data: file.readAsBytesSync(), options: option);
+      Response<String> resp = await _httpClient.put(join('/file/', remotePath),
+          data: fileInfo.toJson().toString());
+      Map<String, dynamic> json = jsonDecode(resp.data.toString());
+      var res = Resp.fromJson(json);
+
+      if (res.status != 0) {
+        stderr.writeln(res.msg);
+        return;
+      }
+
+      var taskId = int.parse(res.msg);
+      var task = Task(taskId, fileInfo, TaskType.Upload, doneBytes: 0);
+
+      taskMap[taskId] = task;
+      _uploadTask(task);
     } catch (err) {
       stderr.writeln(err);
       throw ("occures error when uploading: $err");
@@ -169,6 +167,30 @@ class CyDriveClient {
           fileWriter.close();
         });
       }).onError((error, stackTrace) {
+        stderr.writeln(error);
+      });
+    });
+  }
+
+  void _uploadTask(Task task) async {
+    String storePath = join(filesDirPath, task.fileInfo.filePath);
+
+    File file = File(storePath);
+    task.socket = await Socket.connect(kHost, kCyDriveFtmPort);
+
+    // send task id
+    var bdata = ByteData(8);
+    bdata.setInt64(0, task.id, Endian.little);
+    task.socket.add(bdata.buffer.asUint8List());
+
+    // transfer file
+    task.socket.flush().whenComplete(() {
+      var fileReader = file.openRead();
+
+      task.socket.addStream(fileReader).onError((error, stackTrace) {
+        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        //     content:
+        //         Text('Upload file ${task.fileInfo.filename} failed: $error')));
         stderr.writeln(error);
       });
     });

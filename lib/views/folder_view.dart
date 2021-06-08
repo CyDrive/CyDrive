@@ -56,10 +56,6 @@ class _FolderViewState extends State<FolderView> {
           );
         } else {
           _fileInfoList = snapshot.data;
-          // if (client.remoteDir.isNotEmpty) {
-          //   fileInfoList.add(lastDir(client.remoteDir));
-          // }
-          // fileInfoList.addAll(snapshot.data);
           _fileInfoList.sort((a, b) {
             if (a.filename == '..') return -1;
             if (a.isDir != b.isDir) {
@@ -129,11 +125,12 @@ class _FolderViewState extends State<FolderView> {
     }
     const units = ["B", "KiB", "MiB", "GiB"];
     int unitIndex = 0;
-    while (unitIndex + 1 < units.length && fileInfo.size >= 1024) {
-      fileInfo.size >>= 10;
+    var size = fileInfo.size.toDouble();
+    while (unitIndex + 1 < units.length && size >= 1024) {
+      size /= 1024;
       unitIndex++;
     }
 
-    return Text(fileInfo.size.toString() + ' ' + units[unitIndex]);
+    return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
   }
 }

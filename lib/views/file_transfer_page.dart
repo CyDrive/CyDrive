@@ -1,3 +1,5 @@
+import 'package:cydrive/models/task.dart';
+import 'package:cydrive/views/task_view.dart';
 import 'package:flutter/material.dart';
 
 class FileTransferPage extends StatefulWidget {
@@ -6,16 +8,43 @@ class FileTransferPage extends StatefulWidget {
 }
 
 class _FileTransferPageState extends State<FileTransferPage> {
+  int _selectedIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Tasks'),
+      appBar: AppBar(
+        title: Text('Tasks'),
+      ),
+      body: Center(
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            TaskView(type: TaskType.Download),
+            TaskView(type: TaskType.Upload),
+          ],
         ),
-        body: Center(
-          child: IndexedStack(
-            children: [],
-          ),
-        ));
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.download_sharp), label: 'Download'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.upload_sharp), label: 'Upload'),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onBottomItemTapped,
+      ),
+    );
+  }
+
+  void _onBottomItemTapped(int index) {
+    if (index == _selectedIndex) {
+      return;
+    }
+
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 }
