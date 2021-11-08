@@ -1,19 +1,19 @@
-import 'dart:io';
+// import 'dart:io';
 
-import 'package:cydrive/models/file.dart';
+// import 'package:cydrive/models/file.dart';
 
 enum TaskType {
   All,
   Download,
   Upload,
 }
-class Task {
-  int id;
-  FileInfo fileInfo;
-  TaskType type;
-  int doneBytes;
+// class Task {
+//   int id;
+//   FileInfo fileInfo;
+//   TaskType type;
+//   int doneBytes;
 
-  Socket socket;
+//   Socket socket;
 
-  Task(this.id, this.fileInfo, this.type, {this.doneBytes = 0});
-}
+//   Task(this.id, this.fileInfo, this.type, {this.doneBytes = 0});
+// }

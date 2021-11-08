@@ -20,8 +20,8 @@ class _FileTransferPageState extends State<FileTransferPage> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-            TaskView(type: TaskType.Download),
-            TaskView(type: TaskType.Upload),
+            // TaskView(type: TaskType.Download),
+            // TaskView(type: TaskType.Upload),
           ],
         ),
       ),

@@ -5,6 +5,9 @@ import 'package:cydrive/models/file.dart';
 import 'package:cydrive/views/dir_picker.dart';
 import 'package:cydrive/views/file_transfer_page.dart';
 import 'package:cydrive/views/image_page.dart';
+import 'package:cydrive_sdk/models/account.pb.dart';
+import 'package:cydrive_sdk/models/file_info.pb.dart';
+import 'package:cydrive_sdk/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
@@ -49,9 +52,6 @@ class MyHomePage extends StatefulWidget {
   // empty title => root path
   // and in the case display CyDrive
   MyHomePage({Key key, this.title}) : super(key: key) {
-    client.login('test', 'testCyDrive').then((value) {
-      user = value;
-    });
     getApplicationSupportDirectory().then((value) {
       filesDirPath = value.path;
     });
@@ -66,13 +66,18 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   StreamSubscription _intentDataStreamSubscription;
+  Future<bool> _isLogin = Future.value(false);
   Future<List<FileInfo>> _fileInfoList = Future.value([]);
 
   @override
   void initState() {
     super.initState();
+    Account account = Account(
+      email: 'test@cydrive.io',
+      password: passwordHash('hello_world'),
+    );
+    _isLogin = client.login(account: account);
 
-    _fileInfoList = client.list(widget.title);
     ReceiveSharingIntent.getMediaStream().listen(recvSharedFileHandle);
     ReceiveSharingIntent.getInitialMedia().then(recvSharedFileHandle);
   }
@@ -90,53 +95,91 @@ class _MyHomePageState extends State<MyHomePage> {
       title = widget.title;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(title),
-        actions: [
-          _appBarPopMenuButton(),
-        ],
-      ),
-      body: Center(
-          child: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          FolderView(_fileInfoList, widget.title, onListItemTapped()),
-          ChannelView(),
-          MeView(),
-        ],
-      )),
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.folder_sharp), label: 'Files'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.message_sharp), label: "Channel"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_sharp), label: "Me"),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: debugButton,
-        tooltip: 'debug',
-        child: Icon(Icons.add),
-      ),
-    );
+    return FutureBuilder<bool>(
+        future: _isLogin,
+        builder: (context, AsyncSnapshot<bool> snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "failed to login: " + snapshot.error.toString(),
+                    textScaleFactor: 1.5,
+                  ),
+                  ElevatedButton(
+                      child: Text('retry'),
+                      onPressed: () {
+                        _isLogin = client.login();
+                      })
+                ],
+              ),
+            );
+          } else if (snapshot.hasData) {
+            return Scaffold(
+              appBar: AppBar(
+                // Here we take the value from the MyHomePage object that was created by
+                // the App.build method, and use it to set our appbar title.
+                title: Text(title),
+                actions: [
+                  _appBarPopMenuButton(),
+                ],
+              ),
+              body: Center(
+                  child: IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  FolderView(widget.title, onListItemTapped()),
+                  ChannelView(),
+                  MeView(),
+                ],
+              )),
+              bottomNavigationBar: BottomNavigationBar(
+                items: [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.folder_sharp), label: 'Files'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.message_sharp), label: "Channel"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.person_sharp), label: "Me"),
+                ],
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+              ),
+              floatingActionButton: FloatingActionButton(
+                onPressed: debugButton,
+                tooltip: 'debug',
+                child: Icon(Icons.add),
+              ),
+            );
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        });
   }
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
     setState(() {
       _selectedIndex = index;
-      _fileInfoList = client.list(widget.title);
+      _fileInfoList = client.listDir(widget.title);
     });
   }
 
   void debugButton() {
-    client.login('test', 'testCyDrive');
+    Account account = Account(
+      email: 'test@cydrive.io',
+      password: passwordHash('hello_world'),
+    );
+    client.login(account: account).then((value) {
+      if (value) {
+        setState(() {
+          _fileInfoList = client.listDir('');
+        });
+      }
+    });
   }
 
   Function(FileInfo fileInfo) onListItemTapped(
@@ -155,13 +198,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       )));
         } else {
           if (!File(filesDirPath + fileInfo.filePath).existsSync()) {
-            client.download(fileInfo.filePath).whenComplete(() {}
-                // OpenFile.open(value.path + fileInfo.filePath,
-                //     type: lookupMimeType(fileInfo.filename))
-                );
+            client
+                .download(fileInfo.filePath, filesDirPath + fileInfo.filePath)
+                .whenComplete(() {
+              OpenFile.open(filesDirPath + fileInfo.filePath,
+                  type: lookupMimeType(fileInfo.filePath));
+            });
           } else {
             OpenFile.open(filesDirPath + fileInfo.filePath,
-                type: lookupMimeType(fileInfo.filename));
+                type: lookupMimeType(fileInfo.filePath));
           }
         }
       };
@@ -177,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
             MaterialPageRoute(builder: (context) => DirPickerPage("/")))
         .then((value) {
       for (var mediaFile in sharedFiles) {
-        client.upload(mediaFile.path, value);
+        // client.upload(mediaFile.path, value);
       }
     });
   }

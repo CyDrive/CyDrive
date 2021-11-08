@@ -1,7 +1,8 @@
 import 'package:cydrive/consts.dart';
 import 'package:cydrive/globals.dart';
-import 'package:cydrive/models/file.dart';
 import 'package:cydrive/views/folder_view.dart';
+import 'package:cydrive_sdk/models/file_info.pb.dart';
+import 'package:cydrive_sdk/consts/enums.pb.dart';
 import 'package:flutter/material.dart';
 
 class DirPickerPage extends StatefulWidget {
@@ -19,7 +20,7 @@ class _DirPickerPageState extends State<DirPickerPage> {
   @override
   void initState() {
     super.initState();
-    _fileInfoList = client.list(widget.path);
+    _fileInfoList = client.listDir(widget.path);
   }
 
   @override
@@ -30,7 +31,7 @@ class _DirPickerPageState extends State<DirPickerPage> {
       ),
       body: Column(
         children: [
-          FolderView(_fileInfoList, widget.path, (FileInfo fileInfo) {
+          FolderView(widget.path, (FileInfo fileInfo) {
             Navigator.push(
                     context,
                     MaterialPageRoute(

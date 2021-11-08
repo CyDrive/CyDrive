@@ -1,10 +1,11 @@
-import 'package:cydrive/client/client.dart';
 import 'package:cydrive/consts.dart';
 import 'package:mime/mime.dart';
 import 'package:cydrive/models/user.dart';
 
-User user = User();
-CyDriveClient client = CyDriveClient('http://$kHost:$kCyDrivePort');
+import 'package:cydrive_sdk/cydrive_sdk.dart';
+import 'package:cydrive_sdk/models/account.pb.dart';
+
+CyDriveClient client = CyDriveClient('$kHost', 1);
 
 MimeTypeResolver mimeTypeResolver = MimeTypeResolver();
 
