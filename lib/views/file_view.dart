@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';
 
 class FileView extends StatefulWidget {
@@ -13,7 +14,7 @@ class _FileViewState extends State<FileView> {
 
   @override
   Widget build(BuildContext context) {
-    fileInfo.filename = Random().nextInt(100).toString();
+    fileInfo.filePath = Random().nextInt(100).toString();
     return Row(
       children: [
         Spacer(
@@ -24,7 +25,7 @@ class _FileViewState extends State<FileView> {
           size: 80,
         ),
         Text(
-          fileInfo.filename,
+          fileInfo.filePath,
           textScaleFactor: 2.5,
         ),
         Spacer(

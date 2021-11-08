@@ -1,4 +1,5 @@
 import 'package:cydrive/utils.dart';
+import 'package:cydrive_sdk/models/account.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
 
@@ -10,16 +11,20 @@ class MeView extends StatefulWidget {
 class _MeViewState extends State<MeView> {
   @override
   Widget build(BuildContext context) {
+    var account = client.account;
+
     return Container(
         alignment: Alignment.topCenter,
         child: Column(
           children: [
-            buildUserCard(),
+            buildUserCard(account),
+            Spacer(),
+            Text('id:' + account.id.toString())
           ],
         ));
   }
 
-  Widget buildUserCard() {
+  Widget buildUserCard(SafeAccount account) {
     return Card(
         child: Container(
       margin: EdgeInsets.all(10),
@@ -29,7 +34,7 @@ class _MeViewState extends State<MeView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            user.username,
+            account.name.length > 0 ? account.name : account.email,
             textScaleFactor: 1.5,
           ),
           SizedBox(
@@ -39,11 +44,15 @@ class _MeViewState extends State<MeView> {
             children: [
               Text('Storage Usage:', textScaleFactor: 1.2),
               Spacer(),
-              Text('${sizeString(user.usage)} / ${sizeString(user.cap)}'),
+              Text(
+                  '${sizeString(account.usage.toInt())} / ${sizeString(account.cap.toInt())}'),
             ],
           ),
           SizedBox(height: 1.2),
-          LinearProgressIndicator(value: user.usage.toDouble() / user.cap),
+          LinearProgressIndicator(
+              value: account.cap.isZero
+                  ? 100
+                  : account.usage.toDouble() / account.cap.toDouble()),
         ],
       ),
     ));
