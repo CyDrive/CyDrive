@@ -1,6 +1,7 @@
 import 'package:cydrive/utils.dart';
 import 'package:cydrive_sdk/models/account.pb.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cydrive/globals.dart';
 
 class MeView extends StatefulWidget {
@@ -19,7 +20,14 @@ class _MeViewState extends State<MeView> {
           children: [
             buildUserCard(account),
             Spacer(),
-            Text('id:' + account.id.toString())
+            TextButton(
+              child: Text('id:' + account.id.toString()),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: account.id.toString()));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('has copied the id')));
+              },
+            )
           ],
         ));
   }

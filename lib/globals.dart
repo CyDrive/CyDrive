@@ -12,6 +12,7 @@ FileTransferManager ftm = FileTransferManager();
 MimeTypeResolver mimeTypeResolver = MimeTypeResolver();
 
 String filesDirPath;
+String filesCachePath;
 
 String lookupMimeType(String filename) {
   String type = mimeTypeResolver.lookup(filename);

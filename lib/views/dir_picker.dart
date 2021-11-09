@@ -31,7 +31,7 @@ class _DirPickerPageState extends State<DirPickerPage> {
       ),
       body: Column(
         children: [
-          FolderView(widget.path, (FileInfo fileInfo) {
+          FolderView(widget.path, _fileInfoList, (FileInfo fileInfo) {
             Navigator.push(
                     context,
                     MaterialPageRoute(

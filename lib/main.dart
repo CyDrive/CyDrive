@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:cydrive/consts.dart';
+import 'package:cydrive/utils.dart';
 import 'package:cydrive/views/dir_picker.dart';
 import 'package:cydrive/views/file_transfer_page.dart';
 import 'package:cydrive_sdk/models/account.pb.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
-import 'package:cydrive_sdk/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +15,7 @@ import 'views/me_view.dart';
 import 'globals.dart';
 import 'dart:io';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:file_picker/file_picker.dart';
 
 void main() {
   runApp(MyApp());
@@ -52,6 +53,9 @@ class MyHomePage extends StatefulWidget {
     getApplicationSupportDirectory().then((value) {
       filesDirPath = value.path;
     });
+    getTemporaryDirectory().then((value) {
+      filesCachePath = value.path + '/file_picker';
+    });
   }
 
   final String title;
@@ -63,7 +67,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   StreamSubscription _intentDataStreamSubscription;
-  Future<bool> _isLogin = Future.value(false);
+  Future<List<FileInfo>> _files;
 
   @override
   void initState() {
@@ -72,7 +76,16 @@ class _MyHomePageState extends State<MyHomePage> {
       email: 'test@cydrive.io',
       password: passwordHash('hello_world'),
     );
-    _isLogin = client.login(account: account);
+    client.login(account: account).then((ok) {
+      if (ok) {
+        setState(() {
+          _files = client.listDir(widget.title);
+        });
+      } else if (!ok) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('failed to login')));
+      }
+    });
 
     ReceiveSharingIntent.getMediaStream().listen(recvSharedFileHandle);
     ReceiveSharingIntent.getInitialMedia().then(recvSharedFileHandle);
@@ -80,7 +93,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _intentDataStreamSubscription.cancel();
+    if (_intentDataStreamSubscription != null)
+      _intentDataStreamSubscription.cancel();
     super.dispose();
   }
 
@@ -91,9 +105,9 @@ class _MyHomePageState extends State<MyHomePage> {
       title = widget.title;
     }
 
-    return FutureBuilder<bool>(
-        future: _isLogin,
-        builder: (context, AsyncSnapshot<bool> snapshot) {
+    return FutureBuilder<List<FileInfo>>(
+        future: _files,
+        builder: (context, AsyncSnapshot<List<FileInfo>> snapshot) {
           if (snapshot.hasError) {
             return Center(
               child: Column(
@@ -105,8 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   ElevatedButton(
                       child: Text('retry'),
-                      onPressed: () {
-                        _isLogin = client.login();
+                      onPressed: () async {
+                        _files = null;
+                        await client.login();
+                        _files = client.listDir(widget.title);
                       })
                 ],
               ),
@@ -125,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: IndexedStack(
                 index: _selectedIndex,
                 children: [
-                  FolderView(widget.title, onListItemTapped()),
+                  FolderView(widget.title, _files, onListItemTapped()),
                   ChannelView(),
                   MeView(),
                 ],
@@ -142,11 +158,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 currentIndex: _selectedIndex,
                 onTap: _onItemTapped,
               ),
-              floatingActionButton: FloatingActionButton(
-                onPressed: debugButton,
-                tooltip: 'debug',
-                child: Icon(Icons.add),
-              ),
+              floatingActionButton: _selectedIndex == 0
+                  ? FloatingActionButton(
+                      onPressed: uploadButton,
+                      tooltip: 'upload',
+                      child: Icon(Icons.add),
+                    )
+                  : SizedBox.shrink(),
             );
           } else {
             return Center(
@@ -163,15 +181,14 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void debugButton() {
-    Account account = Account(
-      email: 'test@cydrive.io',
-      password: passwordHash('hello_world'),
-    );
-    client.login(account: account).then((value) {
-      if (value) {
-        setState(() {});
-      }
+  void uploadButton() async {
+    var pickedFiles = await FilePicker.platform.pickFiles(allowMultiple: true);
+    pickedFiles.files.forEach((element) {
+      client
+          .upload(element.path, widget.title + '/' + element.name)
+          .then((value) {
+        ftm.addTask(value);
+      });
     });
   }
 
@@ -190,17 +207,16 @@ class _MyHomePageState extends State<MyHomePage> {
                         title: fileInfo.filePath,
                       )));
         } else {
-          if (!File(filesDirPath + fileInfo.filePath).existsSync()) {
+          var file = getLocalFile(fileInfo.filePath);
+          if (!file.existsSync()) {
             client
                 .download(fileInfo.filePath, filesDirPath + fileInfo.filePath)
                 .then((task) {
               ftm.addTask(task);
-              OpenFile.open(filesDirPath + fileInfo.filePath,
-                  type: lookupMimeType(fileInfo.filePath));
+              OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));
             });
           } else {
-            OpenFile.open(filesDirPath + fileInfo.filePath,
-                type: lookupMimeType(fileInfo.filePath));
+            OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));
           }
         }
       };

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/utils.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -11,8 +12,9 @@ import '../globals.dart';
 class FileView extends StatefulWidget {
   final FileInfo fileInfo;
   final Function(FileInfo fileInfo) onTapped;
+  final Function() onStateChange;
 
-  FileView(this.fileInfo, this.onTapped);
+  FileView(this.fileInfo, this.onTapped, this.onStateChange);
 
   @override
   _FileViewState createState() => _FileViewState();
@@ -24,12 +26,13 @@ class _FileViewState extends State<FileView> {
     IconData iconData = Icons.file_copy_sharp;
     Color color = ThemeData().iconTheme.color;
     var fileInfo = widget.fileInfo;
-    var file = File(filesDirPath + fileInfo.filePath);
+    bool hasLocal = hasLocalFile(fileInfo.filePath);
+    var file = getLocalFile(fileInfo.filePath);
 
     if (fileInfo.isDir) {
       iconData = Icons.folder_open_sharp;
     }
-    if (File(filesDirPath + fileInfo.filePath).existsSync()) {
+    if (file.existsSync()) {
       color = Color(Colors.greenAccent.value);
     }
 
@@ -65,9 +68,13 @@ class _FileViewState extends State<FileView> {
                 switch (index) {
                   case 0:
                     client
-                        .download(fileInfo.filePath, file.path,
+                        .download(
+                            fileInfo.filePath, filesDirPath + fileInfo.filePath,
                             shouldTruncate: true)
-                        .then((value) => ftm.addTask(value));
+                        .then((value) {
+                      ftm.addTask(value);
+                      widget.onStateChange();
+                    });
                     break;
                   case 1:
                     if (file.existsSync()) {
@@ -75,18 +82,23 @@ class _FileViewState extends State<FileView> {
                     }
                     _showDeleteDialog().then((value) {
                       if (value) {
-                        client.delete(fileInfo.filePath);
+                        client
+                            .delete(fileInfo.filePath)
+                            .whenComplete(() => widget.onStateChange());
+                      } else {
+                        widget.onStateChange();
                       }
                     });
                     break;
                   case 2:
                     if (!file.existsSync()) {
                       client
-                          .download(fileInfo.filePath, file.path,
+                          .download(fileInfo.filePath,
+                              filesDirPath + fileInfo.filePath,
                               shouldTruncate: true)
                           .then((value) => ftm.addTask(value));
                     } else {
-                      OpenFile.open(filesDirPath + fileInfo.filePath,
+                      OpenFile.open(file.path,
                           type: lookupMimeType(fileInfo.filePath));
                     }
                     break;
@@ -95,14 +107,6 @@ class _FileViewState extends State<FileView> {
             ),
       onTap: () {
         widget.onTapped(fileInfo);
-      },
-      onLongPress: () {
-        showMenu(
-            context: context,
-            position: RelativeRect.fill,
-            items: <PopupMenuEntry>[
-              PopupMenuItem(child: Text('download')),
-            ]);
       },
     );
   }

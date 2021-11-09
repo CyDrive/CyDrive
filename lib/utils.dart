@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:crypto/crypto.dart';
+import 'package:cydrive/globals.dart';
 
 List<int> md5Hash(List<int> str) {
   return md5.convert(str).bytes;
@@ -33,4 +36,24 @@ String sizeString(int size) {
   }
 
   return size.toString() + ' ' + units[unitIndex];
+}
+
+bool hasLocalFile(String filePath) {
+  var cacheFile = File(filesCachePath + filePath),
+      file = File(filesDirPath + filePath);
+
+  return cacheFile.existsSync() || file.existsSync();
+}
+
+File getLocalFile(String filePath) {
+  var cacheFile = File(filesCachePath + filePath),
+      file = File(filesDirPath + filePath);
+
+  if (file.existsSync()) {
+    return file;
+  } else if (cacheFile.existsSync()) {
+    return cacheFile;
+  } else {
+    return file;
+  }
 }

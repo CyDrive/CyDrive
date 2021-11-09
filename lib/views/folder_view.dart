@@ -11,8 +11,10 @@ class FolderView extends StatefulWidget {
   final remoteDir;
   final Function(FileInfo fileInfo) onItemTapped;
   final ListFilter filter;
+  final Future<List<FileInfo>> files;
 
-  FolderView(this.remoteDir, this.onItemTapped, {this.filter = ListFilter.All});
+  FolderView(this.remoteDir, this.files, this.onItemTapped,
+      {this.filter = ListFilter.All});
 
   @override
   _FolderViewState createState() => _FolderViewState();
@@ -26,7 +28,7 @@ class _FolderViewState extends State<FolderView> {
   void initState() {
     super.initState();
 
-    _fileInfoListF = client.listDir(widget.remoteDir);
+    _fileInfoListF = widget.files;
   }
 
   @override
@@ -70,33 +72,39 @@ class _FolderViewState extends State<FolderView> {
             }
           });
           return RefreshIndicator(
-              child: ListView.builder(
-                itemBuilder: _buildFileItem,
-                itemCount: _fileInfoList.where((element) {
-                  switch (widget.filter) {
-                    case ListFilter.All:
-                      return true;
-                    case ListFilter.OnlyDir:
-                      return element.isDir;
-                    case ListFilter.OnlyFile:
-                      return !element.isDir;
-                  }
-                  return false;
-                }).length,
-              ),
-              onRefresh: _onRefresh);
+            child: ListView.builder(
+              itemBuilder: _buildFileItem,
+              itemCount: _fileInfoList.where((element) {
+                switch (widget.filter) {
+                  case ListFilter.All:
+                    return true;
+                  case ListFilter.OnlyDir:
+                    return element.isDir;
+                  case ListFilter.OnlyFile:
+                    return !element.isDir;
+                }
+                return false;
+              }).length,
+            ),
+            onRefresh: _onRefresh,
+          );
         }
       },
     );
   }
 
   Future<void> _onRefresh() async {
+    await client.login();
     setState(() {
       _fileInfoListF = client.listDir(widget.remoteDir);
     });
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
-    return FileView(_fileInfoList[index], widget.onItemTapped);
+    return FileView(_fileInfoList[index], widget.onItemTapped, () {
+      setState(() {
+        _fileInfoListF = client.listDir(widget.remoteDir);
+      });
+    });
   }
 }
