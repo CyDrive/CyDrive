@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cydrive/consts.dart';
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/views/file_view.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
@@ -10,8 +11,10 @@ class FolderView extends StatefulWidget {
   final remoteDir;
   final Function(FileInfo fileInfo) onItemTapped;
   final ListFilter filter;
+  final Future<List<FileInfo>> files;
 
-  FolderView(this.remoteDir, this.onItemTapped, {this.filter = ListFilter.All});
+  FolderView(this.remoteDir, this.files, this.onItemTapped,
+      {this.filter = ListFilter.All});
 
   @override
   _FolderViewState createState() => _FolderViewState();
@@ -25,7 +28,7 @@ class _FolderViewState extends State<FolderView> {
   void initState() {
     super.initState();
 
-    _fileInfoListF = client.listDir(widget.remoteDir);
+    _fileInfoListF = widget.files;
   }
 
   @override
@@ -69,68 +72,39 @@ class _FolderViewState extends State<FolderView> {
             }
           });
           return RefreshIndicator(
-              child: ListView.builder(
-                itemBuilder: _buildFileItem,
-                itemCount: _fileInfoList.where((element) {
-                  switch (widget.filter) {
-                    case ListFilter.All:
-                      return true;
-                    case ListFilter.OnlyDir:
-                      return element.isDir;
-                    case ListFilter.OnlyFile:
-                      return !element.isDir;
-                  }
-                  return false;
-                }).length,
-              ),
-              onRefresh: _onRefresh);
+            child: ListView.builder(
+              itemBuilder: _buildFileItem,
+              itemCount: _fileInfoList.where((element) {
+                switch (widget.filter) {
+                  case ListFilter.All:
+                    return true;
+                  case ListFilter.OnlyDir:
+                    return element.isDir;
+                  case ListFilter.OnlyFile:
+                    return !element.isDir;
+                }
+                return false;
+              }).length,
+            ),
+            onRefresh: _onRefresh,
+          );
         }
       },
     );
   }
 
   Future<void> _onRefresh() async {
+    await client.login();
     setState(() {
       _fileInfoListF = client.listDir(widget.remoteDir);
     });
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
-    IconData iconData = Icons.file_copy_sharp;
-    Color color = ThemeData().iconTheme.color;
-
-    if (_fileInfoList[index].isDir) {
-      iconData = Icons.folder_open_sharp;
-    }
-    if (File(filesDirPath + _fileInfoList[index].filePath).existsSync()) {
-      color = Color(Colors.greenAccent.value);
-    }
-
-    Icon icon = Icon(iconData, color: color);
-
-    return ListTile(
-      leading: icon,
-      title: Text(_fileInfoList[index].filePath.split('/').last),
-      trailing: _buildSizeText(_fileInfoList[index]),
-      onTap: () {
-        widget.onItemTapped(_fileInfoList[index]);
-      },
-      onLongPress: () {},
-    );
-  }
-
-  Widget _buildSizeText(FileInfo fileInfo) {
-    if (fileInfo.isDir) {
-      return Text('');
-    }
-    const units = ["B", "KiB", "MiB", "GiB"];
-    int unitIndex = 0;
-    var size = fileInfo.size.toDouble();
-    while (unitIndex + 1 < units.length && size >= 1024) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
+    return FileView(_fileInfoList[index], widget.onItemTapped, () {
+      setState(() {
+        _fileInfoListF = client.listDir(widget.remoteDir);
+      });
+    });
   }
 }
