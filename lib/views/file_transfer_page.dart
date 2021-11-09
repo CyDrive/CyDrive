@@ -1,5 +1,5 @@
-import 'package:cydrive/models/task.dart';
 import 'package:cydrive/views/task_view.dart';
+import 'package:cydrive_sdk/models/data_task.dart';
 import 'package:flutter/material.dart';
 
 class FileTransferPage extends StatefulWidget {
@@ -20,8 +20,8 @@ class _FileTransferPageState extends State<FileTransferPage> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-            // TaskView(type: TaskType.Download),
-            // TaskView(type: TaskType.Upload),
+            TaskView(DataTaskType.Download),
+            TaskView(DataTaskType.Upload),
           ],
         ),
       ),

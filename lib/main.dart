@@ -1,17 +1,14 @@
 import 'dart:async';
 
 import 'package:cydrive/consts.dart';
-import 'package:cydrive/models/file.dart';
 import 'package:cydrive/views/dir_picker.dart';
 import 'package:cydrive/views/file_transfer_page.dart';
-import 'package:cydrive/views/image_page.dart';
 import 'package:cydrive_sdk/models/account.pb.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:cydrive_sdk/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share/share.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
@@ -67,7 +64,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   StreamSubscription _intentDataStreamSubscription;
   Future<bool> _isLogin = Future.value(false);
-  Future<List<FileInfo>> _fileInfoList = Future.value([]);
 
   @override
   void initState() {
@@ -164,7 +160,6 @@ class _MyHomePageState extends State<MyHomePage> {
     if (index == _selectedIndex) return;
     setState(() {
       _selectedIndex = index;
-      _fileInfoList = client.listDir(widget.title);
     });
   }
 
@@ -175,9 +170,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     client.login(account: account).then((value) {
       if (value) {
-        setState(() {
-          _fileInfoList = client.listDir('');
-        });
+        setState(() {});
       }
     });
   }
@@ -200,7 +193,8 @@ class _MyHomePageState extends State<MyHomePage> {
           if (!File(filesDirPath + fileInfo.filePath).existsSync()) {
             client
                 .download(fileInfo.filePath, filesDirPath + fileInfo.filePath)
-                .whenComplete(() {
+                .then((task) {
+              ftm.addTask(task);
               OpenFile.open(filesDirPath + fileInfo.filePath,
                   type: lookupMimeType(fileInfo.filePath));
             });

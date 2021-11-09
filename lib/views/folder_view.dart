@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cydrive/consts.dart';
 import 'package:cydrive/models/file.dart';
+import 'package:cydrive/views/file_view.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:cydrive/globals.dart';
@@ -96,41 +97,6 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Widget _buildFileItem(BuildContext context, int index) {
-    IconData iconData = Icons.file_copy_sharp;
-    Color color = ThemeData().iconTheme.color;
-
-    if (_fileInfoList[index].isDir) {
-      iconData = Icons.folder_open_sharp;
-    }
-    if (File(filesDirPath + _fileInfoList[index].filePath).existsSync()) {
-      color = Color(Colors.greenAccent.value);
-    }
-
-    Icon icon = Icon(iconData, color: color);
-
-    return ListTile(
-      leading: icon,
-      title: Text(_fileInfoList[index].filePath.split('/').last),
-      trailing: _buildSizeText(_fileInfoList[index]),
-      onTap: () {
-        widget.onItemTapped(_fileInfoList[index]);
-      },
-      onLongPress: () {},
-    );
-  }
-
-  Widget _buildSizeText(FileInfo fileInfo) {
-    if (fileInfo.isDir) {
-      return Text('');
-    }
-    const units = ["B", "KiB", "MiB", "GiB"];
-    int unitIndex = 0;
-    var size = fileInfo.size.toDouble();
-    while (unitIndex + 1 < units.length && size >= 1024) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
+    return FileView(_fileInfoList[index], widget.onItemTapped);
   }
 }
