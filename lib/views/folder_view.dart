@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cydrive/consts.dart';
-import 'package:cydrive/models/file.dart';
 import 'package:cydrive/views/file_view.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';

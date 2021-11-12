@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:cydrive/globals.dart';
+import 'package:cydrive_sdk/models/file_info.pb.dart';
+import 'package:flutter/material.dart';
 
 List<int> md5Hash(List<int> str) {
   return md5.convert(str).bytes;
@@ -56,4 +58,38 @@ File getLocalFile(String filePath) {
   } else {
     return file;
   }
+}
+
+Widget buildSizeText(FileInfo fileInfo) {
+  if (fileInfo.isDir) {
+    return Text('');
+  }
+  const units = ["B", "KiB", "MiB", "GiB"];
+  int unitIndex = 0;
+  var size = fileInfo.size.toDouble();
+  while (unitIndex + 1 < units.length && size >= 1024) {
+    size /= 1024;
+    unitIndex++;
+  }
+
+  return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
+}
+
+Future<bool> showDeleteDialog(BuildContext context) {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Delete'),
+          content: Text('Also delete the remote file?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('No')),
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Yes')),
+          ],
+        );
+      });
 }

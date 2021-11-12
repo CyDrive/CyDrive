@@ -1,10 +1,8 @@
 import 'package:cydrive/consts.dart';
 import 'package:cydrive/file_transfer_manager/file_transfer_manager.dart';
 import 'package:mime/mime.dart';
-import 'package:cydrive/models/user.dart';
 
 import 'package:cydrive_sdk/cydrive_sdk.dart';
-import 'package:cydrive_sdk/models/account.pb.dart';
 
 CyDriveClient client = CyDriveClient('$kHost', 1);
 FileTransferManager ftm = FileTransferManager();
