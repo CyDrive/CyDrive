@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:cydrive/models/file.dart';
 import 'package:cydrive/utils.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:open_file/open_file.dart';
 
 import '../globals.dart';
@@ -40,57 +40,36 @@ class _FileViewState extends State<FileView> {
 
     var filePopMenuItems = <PopupMenuEntry>[
       PopupMenuItem(
+        child: Text('Open'),
+        value: 'Open',
+      ),
+      PopupMenuItem(
         child: Text('Download'),
-        value: 0,
+        value: 'Download',
+      ),
+      PopupMenuItem(
+        child: Text('Share'),
+        value: 'Share',
       ),
       PopupMenuItem(
         child: Text('Delete'),
-        value: 1,
+        value: 'Delete',
       ),
     ];
 
-    if (file.existsSync()) {
-      filePopMenuItems.add(PopupMenuItem(
-        child: Text('Open'),
-        value: 2,
-      ));
-    }
+    if (!file.existsSync()) {}
 
     return ListTile(
       leading: icon,
       title: Text(fileInfo.filePath.split('/').last),
-      subtitle: _buildSizeText(fileInfo),
+      subtitle: buildSizeText(fileInfo),
       trailing: fileInfo.isDir
           ? SizedBox.shrink()
           : PopupMenuButton(
               itemBuilder: (BuildContext context) => filePopMenuItems,
-              onSelected: (index) {
-                switch (index) {
-                  case 0:
-                    client
-                        .download(
-                            fileInfo.filePath, filesDirPath + fileInfo.filePath,
-                            shouldTruncate: true)
-                        .then((value) {
-                      ftm.addTask(value);
-                      widget.onStateChange();
-                    });
-                    break;
-                  case 1:
-                    if (file.existsSync()) {
-                      file.deleteSync();
-                    }
-                    _showDeleteDialog().then((value) {
-                      if (value) {
-                        client
-                            .delete(fileInfo.filePath)
-                            .whenComplete(() => widget.onStateChange());
-                      } else {
-                        widget.onStateChange();
-                      }
-                    });
-                    break;
-                  case 2:
+              onSelected: (item) {
+                switch (item) {
+                  case 'Open':
                     if (!file.existsSync()) {
                       client
                           .download(fileInfo.filePath,
@@ -102,6 +81,43 @@ class _FileViewState extends State<FileView> {
                           type: lookupMimeType(fileInfo.filePath));
                     }
                     break;
+
+                  case 'Download':
+                    client
+                        .download(
+                            fileInfo.filePath, filesDirPath + fileInfo.filePath,
+                            shouldTruncate: true)
+                        .then((value) {
+                      ftm.addTask(value);
+                      widget.onStateChange();
+                    });
+                    break;
+
+                  case 'Share':
+                    client.share(fileInfo.filePath).then((value) {
+                      Clipboard.setData(ClipboardData(text: value))
+                          .whenComplete(() => ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(
+                                  content: Text(
+                                      'has copied the share-link: $value'))));
+                    });
+
+                    break;
+
+                  case 'Delete':
+                    if (file.existsSync()) {
+                      file.deleteSync();
+                    }
+                    showDeleteDialog(context).then((value) {
+                      if (value) {
+                        client
+                            .delete(fileInfo.filePath)
+                            .whenComplete(() => widget.onStateChange());
+                      } else {
+                        widget.onStateChange();
+                      }
+                    });
+                    break;
                 }
               },
             ),
@@ -109,39 +125,5 @@ class _FileViewState extends State<FileView> {
         widget.onTapped(fileInfo);
       },
     );
-  }
-
-  Future<bool> _showDeleteDialog() {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Delete'),
-            content: Text('Also delete the remote file?'),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('No')),
-              TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text('Yes')),
-            ],
-          );
-        });
-  }
-
-  Widget _buildSizeText(FileInfo fileInfo) {
-    if (fileInfo.isDir) {
-      return Text('');
-    }
-    const units = ["B", "KiB", "MiB", "GiB"];
-    int unitIndex = 0;
-    var size = fileInfo.size.toDouble();
-    while (unitIndex + 1 < units.length && size >= 1024) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
   }
 }

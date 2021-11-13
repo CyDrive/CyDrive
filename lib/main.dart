@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:cydrive/consts.dart';
 import 'package:cydrive/utils.dart';
 import 'package:cydrive/views/dir_picker.dart';
-import 'package:cydrive/views/file_transfer_page.dart';
+import 'package:cydrive/views/task_page.dart';
 import 'package:cydrive_sdk/models/account.pb.dart';
 import 'package:cydrive_sdk/models/file_info.pb.dart';
+import 'package:cydrive_sdk/models/message.pb.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
@@ -68,6 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   StreamSubscription _intentDataStreamSubscription;
   Future<List<FileInfo>> _files;
+  List<Message> _messages = [];
 
   @override
   void initState() {
@@ -80,6 +82,13 @@ class _MyHomePageState extends State<MyHomePage> {
       if (ok) {
         setState(() {
           _files = client.listDir(widget.title);
+          client.connectMessageService(deviceId: 1).then((value) {
+            client.listenMessage((msg) {
+              setState(() {
+                _messages.add(msg);
+              });
+            });
+          });
         });
       } else if (!ok) {
         ScaffoldMessenger.of(context)
@@ -142,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 index: _selectedIndex,
                 children: [
                   FolderView(widget.title, _files, onListItemTapped()),
-                  ChannelView(),
+                  ChannelView(_messages),
                   MeView(),
                 ],
               )),

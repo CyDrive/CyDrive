@@ -1,33 +1,40 @@
 import 'dart:math';
 
-import 'package:cydrive/models/message.dart';
+import 'package:cydrive/globals.dart';
+import 'package:cydrive_sdk/models/message.pb.dart';
 import 'package:flutter/material.dart';
 
 class ChannelView extends StatefulWidget {
+  final List<Message> messages;
+
+  ChannelView(this.messages);
+
   @override
   _ChannelViewState createState() => _ChannelViewState();
 }
 
 class _ChannelViewState extends State<ChannelView> {
-  final messages = <Message>[];
+  List<Message> messages;
   final _textEditingController = TextEditingController();
 
-  _handleSubmitted(String text) {}
+  _handleSubmitted(String text) {
+    client.sendText(text, 0).then((msg) {
+      setState(() {
+        _textEditingController.clear();
+        messages.add(msg);
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    messages = widget.messages;
+  }
 
   @override
   Widget build(BuildContext context) {
-    for (var i = 0; i < 100; i++) {
-      messages.add(Message());
-
-      if (Random().nextBool()) {
-        messages.last.content = 'hello, my computer ' + i.toString();
-        messages.last.sender = 'phone';
-      } else {
-        messages.last.content = 'hello, my phone ' + i.toString();
-        messages.last.sender = 'computer';
-      }
-    }
-
     return Column(
       children: [
         Flexible(
@@ -43,8 +50,9 @@ class _ChannelViewState extends State<ChannelView> {
   }
 
   Widget _buildMessageItem(BuildContext context, int index) {
-    var message = messages[index];
-    if (message.sender == 'phone') {
+    var message = messages[messages.length - index - 1];
+    if (message.sender == 1) {
+      // It's the message the current device sended
       return ListTile(
         title: Text(
           message.sender,
@@ -57,6 +65,7 @@ class _ChannelViewState extends State<ChannelView> {
         trailing: Icon(Icons.phone_android),
       );
     } else {
+      // A message from another device
       return ListTile(
         leading: Icon(Icons.computer_sharp),
         title: Text(message.sender),
