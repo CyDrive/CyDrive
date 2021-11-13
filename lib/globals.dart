@@ -4,7 +4,7 @@ import 'package:mime/mime.dart';
 
 import 'package:cydrive_sdk/cydrive_sdk.dart';
 
-CyDriveClient client = CyDriveClient('$kHost', 1);
+CyDriveClient client = CyDriveClient('$kHost');
 FileTransferManager ftm = FileTransferManager();
 
 MimeTypeResolver mimeTypeResolver = MimeTypeResolver();

@@ -18,7 +18,7 @@ class _ChannelViewState extends State<ChannelView> {
   final _textEditingController = TextEditingController();
 
   _handleSubmitted(String text) {
-    client.sendText(text, 0).then((msg) {
+    client.sendText(text, "").then((msg) {
       setState(() {
         _textEditingController.clear();
         messages.add(msg);
@@ -51,7 +51,7 @@ class _ChannelViewState extends State<ChannelView> {
 
   Widget _buildMessageItem(BuildContext context, int index) {
     var message = messages[messages.length - index - 1];
-    if (message.sender == 1) {
+    if (message.sender == client.deviceId) {
       // It's the message the current device sended
       return ListTile(
         title: Text(
@@ -67,9 +67,18 @@ class _ChannelViewState extends State<ChannelView> {
     } else {
       // A message from another device
       return ListTile(
-        leading: Icon(Icons.computer_sharp),
-        title: Text(message.sender),
-        subtitle: Text(message.content),
+        leading: Column(
+          children: [
+            Icon(
+              Icons.computer_sharp,
+            ),
+            Text(
+              message.senderName,
+              textScaleFactor: 0.7,
+            )
+          ],
+        ),
+        title: Text(message.content),
       );
     }
   }
