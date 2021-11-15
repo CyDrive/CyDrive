@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:cydrive/globals.dart';
 import 'package:cydrive/main.dart';
@@ -18,22 +19,30 @@ class LogInData{
   }
 
   LogInData.fromjson(Map<String, dynamic> json)
-      : account = Account(email: json['email'],password: json['passoword']),
+      : account = Account(email: json['email'],password: json['password']),
         isRememberPwd = json['isRememberPwd'],
-        isAutoLogin = json['isAutoLogin'];
+        isAutoLogin = json['isAutoLogin'],
+        isShowPwd = false, isShowClear = false;
 
    Map<String, dynamic> toJson() => {
         'email': account.email,
-        'password': account.password,
+        'password': isRememberPwd? account.password: '',
         'isRememberPwd': isRememberPwd,
         'isAutoLogin': isAutoLogin
       };
+
+  Account getHashAccount(){
+    return Account(
+      email: this.account.email, 
+      password: passwordHash(this.account.password)
+    );
+  }
 }
 
 
 class LogInPageState extends State<MyHomePage> {
 
-  LogInData logInData = LogInData(email: 'test@cydrive.io', password: 'hello_world');
+  LogInData logInData = LogInData(email: '', password: '');
   FocusNode focusNodeEmail = new FocusNode();
   FocusNode focusNodePassword = new FocusNode();
 
@@ -41,9 +50,6 @@ class LogInPageState extends State<MyHomePage> {
 
   TextEditingController emailController = new TextEditingController();
   TextEditingController passwordController = new TextEditingController();
-  // String data
-  String dataPath;
-  Future<String> logInDataCallback;
 
   Future<Null> focusNodeListrener()async{
     if(focusNodeEmail.hasFocus){
@@ -72,7 +78,7 @@ class LogInPageState extends State<MyHomePage> {
     return null;
   }
 
-  Future<String> loadLogInData()async{
+  Future<LogInData> loadLogInData()async{
     await widget.dataReady;
     print('$filesCachePath' + "/account.json");
     Directory dir = Directory(filesCachePath);
@@ -81,15 +87,16 @@ class LogInPageState extends State<MyHomePage> {
     File file = File('$filesCachePath' + "/account.json");
     if (!await file.exists())
       await file.create();  
-    var jsonString = await file.readAsString();
-    return jsonString;
+    var jsonMap = json.decode(await file.readAsString());
+    print(jsonMap);
+    return logInData=LogInData.fromjson(jsonMap);
   }
 
   Future<bool> saveLogInData()async{
     await widget.dataReady;
     try{
-      File file = File(dataPath);
-      file.writeAsString(logInData.toJson().toString());
+      File file = File('$filesCachePath' + "/account.json");
+      file.writeAsString(json.encode(logInData));
     } catch (e){
       print(e);
       return false;
@@ -100,18 +107,23 @@ class LogInPageState extends State<MyHomePage> {
   @override
   void initState(){
     print("init LoginPageState");
-    logInDataCallback=loadLogInData();
+    loadLogInData().then((value){
+      setState(() {
+        passwordController.text = logInData.account.password;
+        emailController.text = logInData.account.email;    
+      });
+    });
+
     focusNodeEmail.addListener(focusNodeListrener);
     focusNodePassword.addListener(focusNodeListrener);
-
-    passwordController.text = logInData.account.password;
-    emailController.text = logInData.account.email;    
     emailController.addListener(() {
       if(emailController.text.length > 0){
         logInData.isShowClear = true;
       }else{
         logInData.isShowClear = false;
       }
+      setState(() {
+      });
     });
     super.initState();
   }
@@ -127,7 +139,7 @@ class LogInPageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    
+    print("buildWidget");
     Widget emailTextFiled = new TextFormField(
               controller: emailController,
               focusNode: focusNodeEmail,
@@ -198,15 +210,15 @@ Widget loginButtonArea = new Container(
           backgroundColor: MaterialStateProperty.all(Colors.blue[300])
         ),
         onPressed: (){
-          saveLogInData().then((ok){if (!ok) print("data Cache error");});
           focusNodePassword.unfocus();
           focusNodeEmail.unfocus();
 
           if (logFormState.currentState.validate()) {
             logFormState.currentState.save();
             print('${logInData.account}');
-            client.login(account: logInData.account).then((ok){
+            client.login(account: logInData.getHashAccount()).then((ok){
               if(ok){
+                saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
                 print("登录成功");
               } else{
                 print("登录失败");
