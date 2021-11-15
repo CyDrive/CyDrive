@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
+import 'views/login_page.dart';
 import 'globals.dart';
 import 'dart:io';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -47,22 +48,24 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
+  Future dataReady;
   // title is the current dir path
   // empty title => root path
   // and in the case display CyDrive
   MyHomePage({Key key, this.title}) : super(key: key) {
-    getApplicationSupportDirectory().then((value) {
-      filesDirPath = value.path;
-    });
+    dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
+        filesDirPath = value.path;
+      }),
     getTemporaryDirectory().then((value) {
-      filesCachePath = value.path + '/file_picker';
-    });
+        filesCachePath = value.path + '/file_picker';
+      })]);
   }
 
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  // _MyHomePageState createState() => _MyHomePageState();
+  LogInPageState createState() => LogInPageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -73,6 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    print(filesCachePath);
     super.initState();
     Account account = Account(
       email: 'test@cydrive.io',
