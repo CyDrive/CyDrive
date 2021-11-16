@@ -194,129 +194,6 @@ class LogInPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
     print("buildWidget");
-    Widget emailTextFiled = TextFormField(
-      controller: emailController,
-      focusNode: focusNodeEmail,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: "email",
-        hintText: "请输入邮箱账号",
-        prefixIcon: Icon(Icons.email),
-        suffixIcon: (logInData.isShowClear)
-            ? IconButton(
-                onPressed: () {
-                  emailController.clear();
-                },
-                icon: Icon(Icons.clear))
-            : null,
-      ),
-      validator: checkEmail,
-      onSaved: (String value) {
-        logInData.account.email = value;
-      },
-    );
-    print(logInData.isLoadJson);
-    Widget passwordTextFiled = TextFormField(
-      controller: passwordController,
-      focusNode: focusNodePassword,
-      decoration: InputDecoration(
-          labelText: "password",
-          hintText: "请输入密码",
-          prefixIcon: Icon(Icons.lock),
-          suffixIcon: logInData.isLoadJson
-              ? IconButton(
-                  onPressed: () {
-                    passwordController.clear();
-                    setState(() {
-                      logInData.isLoadJson = false;
-                    });
-                  },
-                  icon: Icon(Icons.clear))
-              : IconButton(
-                  icon: Icon((logInData.isShowPwd)
-                      ? Icons.visibility
-                      : Icons.visibility_off),
-                  onPressed: () {
-                    setState(() {
-                      logInData.isShowPwd = !logInData.isShowPwd;
-                    });
-                  })),
-      obscureText: !logInData.isShowPwd,
-      validator: checkPassword,
-      onSaved: (String value) {
-        logInData.account.password = value;
-      },
-    );
-
-    Widget inputTextArea = new Container(
-        margin: EdgeInsets.only(left: 20, right: 20),
-        decoration: new BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-            color: Colors.white),
-        child: new Form(
-            key: logFormState,
-            child: new Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[emailTextFiled, passwordTextFiled],
-            )));
-
-    Widget loginButtonArea = new Container(
-      margin: EdgeInsets.only(left: 20, right: 20),
-      height: 55.0,
-      child: new ElevatedButton(
-        child: Text(
-          "登录",
-          style: Theme.of(context).primaryTextTheme.headline4,
-        ),
-        style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(Colors.blue[300])),
-        onPressed: () {
-          focusNodePassword.unfocus();
-          focusNodeEmail.unfocus();
-
-          if (logFormState.currentState.validate()) {
-            logFormState.currentState.save();
-            print('${logInData.account}');
-            client
-                .login(
-                    account: logInData.isLoadJson
-                        ? logInData.account
-                        : logInData.getHashAccount())
-                .then((ok) {
-              if (ok) {
-                logIn();
-                saveLogInData().then((ok) {
-                  print("保存成功");
-                  if (!ok) print("data Cache error");
-                });
-              } else {
-                print("登录失败");
-              }
-            });
-          }
-        },
-      ),
-    );
-
-    Widget rememberCheckBox = new CheckboxListTile(
-      title: const Text('记住密码'),
-      value: logInData.isRememberPwd,
-      onChanged: (bool value) {
-        setState(() {
-          logInData.isRememberPwd = !logInData.isRememberPwd;
-        });
-      },
-    );
-
-    Widget autoLoginCheckBox = new CheckboxListTile(
-      title: const Text('自动登录'),
-      value: logInData.isAutoLogin,
-      onChanged: (bool value) {
-        setState(() {
-          logInData.isAutoLogin = !logInData.isAutoLogin;
-        });
-      },
-    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -329,14 +206,133 @@ class LogInPageState extends State<LogInPage> {
           child: ListView(
             children: <Widget>[
               SizedBox(height: 300),
-              inputTextArea,
+              Container(
+                  margin: EdgeInsets.only(left: 20, right: 20),
+                  decoration: new BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      color: Colors.white),
+                  child: new Form(
+                      key: logFormState,
+                      child: new Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          TextFormField(
+                            controller: emailController,
+                            focusNode: focusNodeEmail,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "email",
+                              hintText: "请输入邮箱账号",
+                              prefixIcon: Icon(Icons.email),
+                              suffixIcon: (logInData.isShowClear)
+                                  ? IconButton(
+                                      onPressed: () {
+                                        emailController.clear();
+                                      },
+                                      icon: Icon(Icons.clear))
+                                  : null,
+                            ),
+                            validator: checkEmail,
+                            onSaved: (String value) {
+                              logInData.account.email = value;
+                            },
+                          ),
+                          TextFormField(
+                            controller: passwordController,
+                            focusNode: focusNodePassword,
+                            decoration: InputDecoration(
+                                labelText: "password",
+                                hintText: "请输入密码",
+                                prefixIcon: Icon(Icons.lock),
+                                suffixIcon: logInData.isLoadJson
+                                    ? IconButton(
+                                        onPressed: () {
+                                          passwordController.clear();
+                                          setState(() {
+                                            logInData.isLoadJson = false;
+                                          });
+                                        },
+                                        icon: Icon(Icons.clear))
+                                    : IconButton(
+                                        icon: Icon((logInData.isShowPwd)
+                                            ? Icons.visibility
+                                            : Icons.visibility_off),
+                                        onPressed: () {
+                                          setState(() {
+                                            logInData.isShowPwd =
+                                                !logInData.isShowPwd;
+                                          });
+                                        })),
+                            obscureText: !logInData.isShowPwd,
+                            validator: checkPassword,
+                            onSaved: (String value) {
+                              logInData.account.password = value;
+                            },
+                          )
+                        ],
+                      ))),
               Row(
                 children: <Widget>[
-                  Expanded(child: rememberCheckBox),
-                  Expanded(child: autoLoginCheckBox)
+                  Expanded(
+                      child: CheckboxListTile(
+                    title: const Text('记住密码'),
+                    value: logInData.isRememberPwd,
+                    onChanged: (bool value) {
+                      setState(() {
+                        logInData.isRememberPwd = !logInData.isRememberPwd;
+                      });
+                    },
+                  )),
+                  Expanded(
+                      child: CheckboxListTile(
+                    title: const Text('自动登录'),
+                    value: logInData.isAutoLogin,
+                    onChanged: (bool value) {
+                      setState(() {
+                        logInData.isAutoLogin = !logInData.isAutoLogin;
+                      });
+                    },
+                  ))
                 ],
               ),
-              loginButtonArea
+              Container(
+                margin: EdgeInsets.only(left: 20, right: 20),
+                height: 55.0,
+                child: new ElevatedButton(
+                  child: Text(
+                    "登录",
+                    style: Theme.of(context).primaryTextTheme.headline4,
+                  ),
+                  style: ButtonStyle(
+                      backgroundColor:
+                          MaterialStateProperty.all(Colors.blue[300])),
+                  onPressed: () {
+                    focusNodePassword.unfocus();
+                    focusNodeEmail.unfocus();
+
+                    if (logFormState.currentState.validate()) {
+                      logFormState.currentState.save();
+                      print('${logInData.account}');
+                      client
+                          .login(
+                              account: logInData.isLoadJson
+                                  ? logInData.account
+                                  : logInData.getHashAccount())
+                          .then((ok) {
+                        if (ok) {
+                          logIn();
+                          saveLogInData().then((ok) {
+                            print("保存成功");
+                            if (!ok) print("data Cache error");
+                          });
+                        } else {
+                          print("登录失败");
+                        }
+                      });
+                    }
+                  },
+                ),
+              )
             ],
           )),
     );
