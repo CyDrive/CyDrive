@@ -11,17 +11,18 @@ import 'package:path_provider/path_provider.dart';
 
 class LogInData{
   Account account;
-  bool isShowPwd,isShowClear,isRememberPwd,isAutoLogin;
+  bool isShowPwd,isShowClear,isRememberPwd,isAutoLogin,isLoadJson;
 
   LogInData({String email='', String password=''}){
     this.account = Account(email: email, password: password);
-    this.isShowPwd = this.isShowClear = this.isRememberPwd = this.isAutoLogin = false;
+    this.isShowPwd = this.isShowClear = this.isRememberPwd = this.isAutoLogin = this.isLoadJson = false;
   }
 
   LogInData.fromjson(Map<String, dynamic> json)
       : account = Account(email: json['email'],password: json['password']),
         isRememberPwd = json['isRememberPwd'],
         isAutoLogin = json['isAutoLogin'],
+        isLoadJson = false,
         isShowPwd = false, isShowClear = false;
 
    Map<String, dynamic> toJson() => {
@@ -41,7 +42,7 @@ class LogInData{
 
 
 class LogInPage extends StatefulWidget {
-  final Future dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
+  final Future pathReady = Future.wait([getApplicationSupportDirectory().then((value) {
         filesDirPath = value.path;
       }),
     getTemporaryDirectory().then((value) {
@@ -97,8 +98,8 @@ class LogInPageState extends State<LogInPage> {
     return null;
   }
 
-  Future<LogInData> loadLogInData()async{
-    await widget.dataReady;
+  Future<Null> loadLogInData()async{
+    await widget.pathReady;
     
     //comfirm dir exist or create dir
     print('$filesCachePath' + "/account.json");
@@ -114,17 +115,26 @@ class LogInPageState extends State<LogInPage> {
     //json decode
     var jsonMap = json.decode(await file.readAsString());
     print(jsonMap);
-    return logInData=LogInData.fromjson(jsonMap);
+    logInData=LogInData.fromjson(jsonMap);
   }
 
   Future<Null> saveLogInData()async{
-    await widget.dataReady;
+    await widget.pathReady;
     File file = File('$filesCachePath' + "/account.json");
     file.writeAsString(json.encode(logInData));    
   }
 
   void logIn(){
     print("登录成功");
+    setState(() {
+      if (!logInData.isLoadJson)
+        passwordController.text=passwordHash(logInData.account.password);
+      if (!logInData.isRememberPwd)
+        passwordController.text='';
+      print(logInData.account.password);
+      logInData.isShowPwd=false;
+      logInData.isLoadJson=logInData.isRememberPwd;
+    });
     Navigator.push(
       context, 
       MaterialPageRoute(builder: (context)=>MyHomePage(
@@ -136,16 +146,17 @@ class LogInPageState extends State<LogInPage> {
   @override
   void initState(){
     print("init LoginPageState");
-    loadLogInData().then((value){
+    loadLogInData().then((_){
       setState(() {
-        passwordController.text = logInData.account.password;
-        emailController.text = logInData.account.email;
         if (logInData.isAutoLogin)
-          client.login(account: logInData.getHashAccount()).then((ok){
+          client.login(account: logInData.account).then((ok){
                 if(ok)logIn();else{
                   print("自动登录失败");
                 }
           });
+        logInData.isLoadJson = logInData.isRememberPwd;
+        passwordController.text = logInData.account.password;
+        emailController.text = logInData.account.email;
       });
     });
 
@@ -160,6 +171,15 @@ class LogInPageState extends State<LogInPage> {
       setState(() {
       });
     });
+
+    passwordController.addListener(() { 
+      if(logInData.isLoadJson&&passwordController.text.length==0){
+        logInData.isLoadJson=false;
+        setState(() {
+        });
+      }
+    });
+    print(logInData.isLoadJson);
     super.initState();
   }
 
@@ -175,7 +195,7 @@ class LogInPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
     print("buildWidget");
-    Widget emailTextFiled = new TextFormField(
+    Widget emailTextFiled = TextFormField(
               controller: emailController,
               focusNode: focusNodeEmail,
               keyboardType: TextInputType.number,
@@ -190,22 +210,31 @@ class LogInPageState extends State<LogInPage> {
                 logInData.account.email = value;
               },
             );
-
-    Widget passwordTextFiled = new TextFormField(
+    print( logInData.isLoadJson);
+    Widget passwordTextFiled = TextFormField(
               controller: passwordController,
               focusNode: focusNodePassword,
               decoration: InputDecoration(
                 labelText: "password",
                 hintText: "请输入密码",
                 prefixIcon: Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon((logInData.isShowPwd)?Icons.visibility : Icons.visibility_off),
-                  onPressed: (){
-                    setState(() {
-                      logInData.isShowPwd = !logInData.isShowPwd;
-                    });
-                  },
-                ) 
+                suffixIcon: logInData.isLoadJson?
+                  IconButton(
+                    onPressed: (){
+                      passwordController.clear();
+                      setState(() {
+                        logInData.isLoadJson=false;
+                      });
+                    },
+                    icon: Icon(Icons.clear)
+                  ):
+                  IconButton(
+                    icon: Icon((logInData.isShowPwd)?Icons.visibility : Icons.visibility_off),
+                    onPressed: (){
+                      setState(() {
+                        logInData.isShowPwd = !logInData.isShowPwd;
+                      });
+                  }) 
               ),
               obscureText: !logInData.isShowPwd,
               validator: checkPassword,
@@ -251,15 +280,14 @@ Widget loginButtonArea = new Container(
           if (logFormState.currentState.validate()) {
             logFormState.currentState.save();
             print('${logInData.account}');
-            client.login(account: logInData.getHashAccount()).then((ok){
+            client.login(account: logInData.isLoadJson? logInData.account:logInData.getHashAccount()).then((ok){
               if(ok){
-                  saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
                   logIn();
+                  saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
               } else{
                 print("登录失败");
               }
             });
-            print("$logInData");
           }
 
         },
@@ -288,17 +316,17 @@ Widget loginButtonArea = new Container(
   
   return Scaffold(
       backgroundColor: Colors.white,
-      body: new GestureDetector(
+      body: GestureDetector(
         onTap: (){
           print("点击控件外区域");
           focusNodePassword.unfocus();
           focusNodeEmail.unfocus();
         },
-        child: new ListView(
+        child: ListView(
           children: <Widget>[
-            new SizedBox(height: 300),
+            SizedBox(height: 300),
             inputTextArea,
-            new Row(
+            Row(
               children: <Widget>[
                 Expanded(child: rememberCheckBox),
                 Expanded(child: autoLoginCheckBox)
