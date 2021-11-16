@@ -40,7 +40,27 @@ class LogInData{
 }
 
 
-class LogInPageState extends State<MyHomePage> {
+class LogInPage extends StatefulWidget {
+  Future dataReady;
+  // title is the current dir path
+  // empty title => root path
+  // and in the case display CyDrive
+  LogInPage({Key key, this.title}) : super(key: key) {
+    dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
+        filesDirPath = value.path;
+      }),
+    getTemporaryDirectory().then((value) {
+        filesCachePath = value.path + '/file_picker';
+      })]);
+  }
+
+  final String title;
+
+  @override
+  LogInPageState createState() => LogInPageState();
+}
+
+class LogInPageState extends State<LogInPage> {
 
   LogInData logInData = LogInData(email: '', password: '');
   FocusNode focusNodeEmail = new FocusNode();
@@ -220,6 +240,12 @@ Widget loginButtonArea = new Container(
               if(ok){
                 saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
                 print("登录成功");
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context)=>MyHomePage(
+                    key: widget.key,
+                    title: '',
+                  )));
               } else{
                 print("登录失败");
               }

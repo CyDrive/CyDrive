@@ -42,30 +42,22 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.deepPurple,
       ),
-      home: MyHomePage(key: Key('home'), title: ''),
+      // home: MyHomePage(key: Key('home'), title: ''),
+      home: LogInPage()
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  Future dataReady;
   // title is the current dir path
   // empty title => root path
   // and in the case display CyDrive
-  MyHomePage({Key key, this.title}) : super(key: key) {
-    dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
-        filesDirPath = value.path;
-      }),
-    getTemporaryDirectory().then((value) {
-        filesCachePath = value.path + '/file_picker';
-      })]);
-  }
+  MyHomePage({Key key, this.title}) : super(key: key) ;
 
   final String title;
 
   @override
-  // _MyHomePageState createState() => _MyHomePageState();
-  LogInPageState createState() => LogInPageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -76,30 +68,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    print(filesCachePath);
+    
     super.initState();
-    Account account = Account(
-      email: 'test@cydrive.io',
-      password: passwordHash('hello_world'),
-    );
-    client.login(account: account).then((ok) {
-      if (ok) {
-        setState(() {
-          _files = client.listDir(widget.title);
-          client.connectMessageService(deviceId: 1).then((value) {
-            client.listenMessage((msg) {
-              setState(() {
-                _messages.add(msg);
-              });
-            });
-          });
-        });
-      } else if (!ok) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('failed to login')));
-      }
-    });
-
+    _files = client.listDir(widget.title);
     ReceiveSharingIntent.getMediaStream().listen(recvSharedFileHandle);
     ReceiveSharingIntent.getInitialMedia().then(recvSharedFileHandle);
   }
