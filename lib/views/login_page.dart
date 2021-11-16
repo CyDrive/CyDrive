@@ -10,6 +10,16 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 class LogInData {
+  /*
+    account: Save user account input.
+    isShwoPwd: Use to control the if password is visibility, default to false, related to the button shown when password was not loding form config.
+    ifShowClear: Use to control if email clear password is visibility, related to if some word in email form.
+    isRemember: Use to control if remember password after successful log in.
+    isAutoLogin: Use to control if auto log in next time after successful log in.
+    isLoadJson: Express if encrypted password was loding from config.
+                Use to decide if user could change the isShowPwd state(not if true)
+                and show the button to clear password form instead.
+  */ 
   Account account;
   bool isShowPwd, isShowClear, isRememberPwd, isAutoLogin, isLoadJson;
 
