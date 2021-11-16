@@ -41,18 +41,17 @@ class LogInData{
 
 
 class LogInPage extends StatefulWidget {
-  Future dataReady;
-  // title is the current dir path
-  // empty title => root path
-  // and in the case display CyDrive
-  LogInPage({Key key, this.title}) : super(key: key) {
-    dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
+  final Future dataReady = Future.wait([getApplicationSupportDirectory().then((value) {
         filesDirPath = value.path;
       }),
     getTemporaryDirectory().then((value) {
         filesCachePath = value.path + '/file_picker';
       })]);
-  }
+
+  // title is the current dir path
+  // empty title => root path
+  // and in the case display CyDrive
+  LogInPage({Key key, this.title}) : super(key: key) ;
 
   final String title;
 
@@ -100,28 +99,38 @@ class LogInPageState extends State<LogInPage> {
 
   Future<LogInData> loadLogInData()async{
     await widget.dataReady;
+    
+    //comfirm dir exist or create dir
     print('$filesCachePath' + "/account.json");
     Directory dir = Directory(filesCachePath);
     if (!await dir.exists())
       await dir.create();
+    
+    //confim data file exist or create json file
     File file = File('$filesCachePath' + "/account.json");
     if (!await file.exists())
       await file.create();  
+
+    //json decode
     var jsonMap = json.decode(await file.readAsString());
     print(jsonMap);
     return logInData=LogInData.fromjson(jsonMap);
   }
 
-  Future<bool> saveLogInData()async{
+  Future<Null> saveLogInData()async{
     await widget.dataReady;
-    try{
-      File file = File('$filesCachePath' + "/account.json");
-      file.writeAsString(json.encode(logInData));
-    } catch (e){
-      print(e);
-      return false;
-    }
-    return true;    
+    File file = File('$filesCachePath' + "/account.json");
+    file.writeAsString(json.encode(logInData));    
+  }
+
+  void logIn(){
+    print("登录成功");
+    Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (context)=>MyHomePage(
+        key: widget.key,
+        title: '',
+      )));
   }
 
   @override
@@ -130,7 +139,13 @@ class LogInPageState extends State<LogInPage> {
     loadLogInData().then((value){
       setState(() {
         passwordController.text = logInData.account.password;
-        emailController.text = logInData.account.email;    
+        emailController.text = logInData.account.email;
+        if (logInData.isAutoLogin)
+          client.login(account: logInData.getHashAccount()).then((ok){
+                if(ok)logIn();else{
+                  print("自动登录失败");
+                }
+          });
       });
     });
 
@@ -238,14 +253,8 @@ Widget loginButtonArea = new Container(
             print('${logInData.account}');
             client.login(account: logInData.getHashAccount()).then((ok){
               if(ok){
-                saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
-                print("登录成功");
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(builder: (context)=>MyHomePage(
-                    key: widget.key,
-                    title: '',
-                  )));
+                  saveLogInData().then((ok){print("保存成功");if (!ok) print("data Cache error");});
+                  logIn();
               } else{
                 print("登录失败");
               }
