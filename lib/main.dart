@@ -82,13 +82,6 @@ class _MyHomePageState extends State<MyHomePage> {
       if (ok) {
         setState(() {
           _files = client.listDir(widget.title);
-          client.connectMessageService().then((value) {
-            client.listenMessage((msg) {
-              setState(() {
-                _messages.add(msg);
-              });
-            });
-          });
         });
       } else if (!ok) {
         ScaffoldMessenger.of(context)
@@ -219,10 +212,19 @@ class _MyHomePageState extends State<MyHomePage> {
           var file = getLocalFile(fileInfo.filePath);
           if (!file.existsSync()) {
             client
-                .download(fileInfo.filePath, filesDirPath + fileInfo.filePath)
+                .download(fileInfo.filePath, filesDirPath + fileInfo.filePath,
+                    shouldTruncate: true)
                 .then((task) {
+              debugPrint(
+                  'filesDirPath=$filesDirPath\nfilePath=`${fileInfo.filePath}`');
               ftm.addTask(task);
-              OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));
+              task.Wait().whenComplete(() {
+                debugPrint('fileInfo= ${task.fileInfo}');
+                debugPrint('doneBytes: ${task.downBytes}');
+
+                OpenFile.open(file.path,
+                    type: lookupMimeType(fileInfo.filePath));
+              });
             });
           } else {
             OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));

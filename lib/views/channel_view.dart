@@ -31,6 +31,20 @@ class _ChannelViewState extends State<ChannelView> {
     super.initState();
 
     messages = widget.messages;
+
+    client.getMessages().then((value) {
+      setState(() {
+        messages = value;
+      });
+    });
+
+    client.connectMessageService().then((value) {
+      client.listenMessage((msg) {
+        setState(() {
+          messages.add(msg);
+        });
+      });
+    });
   }
 
   @override
@@ -72,10 +86,14 @@ class _ChannelViewState extends State<ChannelView> {
             Icon(
               Icons.computer_sharp,
             ),
-            Text(
-              message.senderName,
-              textScaleFactor: 0.7,
-            )
+            Container(
+                width: 50,
+                child: Text(
+                  message.senderName,
+                  textScaleFactor: 0.7,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                )),
           ],
         ),
         title: Text(message.content),

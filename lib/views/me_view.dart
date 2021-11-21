@@ -21,7 +21,10 @@ class _MeViewState extends State<MeView> {
             buildUserCard(account),
             Spacer(),
             TextButton(
-              child: Text('id:' + account.id.toString()),
+              child: Text(
+                'id:' + account.id.toString(),
+                textScaleFactor: 0.9,
+              ),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: account.id.toString()));
                 ScaffoldMessenger.of(context)
