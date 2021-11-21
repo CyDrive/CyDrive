@@ -82,13 +82,6 @@ class _MyHomePageState extends State<MyHomePage> {
       if (ok) {
         setState(() {
           _files = client.listDir(widget.title);
-          client.connectMessageService(deviceId: 1).then((value) {
-            client.listenMessage((msg) {
-              setState(() {
-                _messages.add(msg);
-              });
-            });
-          });
         });
       } else if (!ok) {
         ScaffoldMessenger.of(context)
@@ -219,10 +212,19 @@ class _MyHomePageState extends State<MyHomePage> {
           var file = getLocalFile(fileInfo.filePath);
           if (!file.existsSync()) {
             client
-                .download(fileInfo.filePath, filesDirPath + fileInfo.filePath)
+                .download(fileInfo.filePath, filesDirPath + fileInfo.filePath,
+                    shouldTruncate: true)
                 .then((task) {
+              debugPrint(
+                  'filesDirPath=$filesDirPath\nfilePath=`${fileInfo.filePath}`');
               ftm.addTask(task);
-              OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));
+              task.Wait().whenComplete(() {
+                debugPrint('fileInfo= ${task.fileInfo}');
+                debugPrint('doneBytes: ${task.downBytes}');
+
+                OpenFile.open(file.path,
+                    type: lookupMimeType(fileInfo.filePath));
+              });
             });
           } else {
             OpenFile.open(file.path, type: lookupMimeType(fileInfo.filePath));
@@ -251,18 +253,36 @@ class _MyHomePageState extends State<MyHomePage> {
       itemBuilder: (BuildContext context) => [
         PopupMenuItem(
           child: Text('New Folder'),
-          value: 0,
+          value: 'Folder',
         ),
         PopupMenuItem(
           child: Text('Tasks'),
-          value: 1,
+          value: 'Tasks',
+        ),
+        PopupMenuItem(
+          child: Text('About'),
+          value: 'About',
         )
       ],
       onSelected: (index) {
         switch (index) {
-          case 1:
+          case 'Tasks':
             Navigator.push(context,
                 MaterialPageRoute(builder: (context) => FileTransferPage()));
+            break;
+
+          case 'About':
+            showDialog(
+                context: context,
+                builder: (context) {
+                  return AboutDialog(
+                    children: [
+                      Text('device_id: ${client.deviceId}'),
+                      Text('device_name: ${client.deviceName}')
+                    ],
+                  );
+                });
+
             break;
         }
       },
