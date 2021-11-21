@@ -212,7 +212,7 @@ packages:
     source: hosted
     version: "2.2.1"
   device_info_plus_web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: device_info_plus_web
       url: "https://pub.dartlang.org"

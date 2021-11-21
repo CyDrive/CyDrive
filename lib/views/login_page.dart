@@ -19,7 +19,7 @@ class LogInData {
     isLoadJson: Express if encrypted password was loding from config.
                 Use to decide if user could change the isShowPwd state(not if true)
                 and show the button to clear password form instead.
-  */ 
+  */
   Account account;
   bool isShowPwd, isShowClear, isRememberPwd, isAutoLogin, isLoadJson;
 
@@ -142,6 +142,7 @@ class LogInPageState extends State<LogInPage> {
       print(logInData.account.password);
       logInData.isShowPwd = false;
       logInData.isLoadJson = logInData.isRememberPwd;
+      logInData.account.password = passwordController.text;
     });
     Navigator.push(
         context,
@@ -229,10 +230,10 @@ class LogInPageState extends State<LogInPage> {
                           TextFormField(
                             controller: emailController,
                             focusNode: focusNodeEmail,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: "email",
-                              hintText: "请输入邮箱账号",
+                              hintText: "input the account email",
                               prefixIcon: Icon(Icons.email),
                               suffixIcon: (logInData.isShowClear)
                                   ? IconButton(
@@ -252,7 +253,7 @@ class LogInPageState extends State<LogInPage> {
                             focusNode: focusNodePassword,
                             decoration: InputDecoration(
                                 labelText: "password",
-                                hintText: "请输入密码",
+                                hintText: "input password",
                                 prefixIcon: Icon(Icons.lock),
                                 suffixIcon: logInData.isLoadJson
                                     ? IconButton(
@@ -285,7 +286,7 @@ class LogInPageState extends State<LogInPage> {
                 children: <Widget>[
                   Expanded(
                       child: CheckboxListTile(
-                    title: const Text('记住密码'),
+                    title: const Text('remember'),
                     value: logInData.isRememberPwd,
                     onChanged: (bool value) {
                       setState(() {
@@ -295,7 +296,7 @@ class LogInPageState extends State<LogInPage> {
                   )),
                   Expanded(
                       child: CheckboxListTile(
-                    title: const Text('自动登录'),
+                    title: const Text('auto'),
                     value: logInData.isAutoLogin,
                     onChanged: (bool value) {
                       setState(() {
@@ -310,7 +311,7 @@ class LogInPageState extends State<LogInPage> {
                 height: 55.0,
                 child: new ElevatedButton(
                   child: Text(
-                    "登录",
+                    "Login",
                     style: Theme.of(context).primaryTextTheme.headline4,
                   ),
                   style: ButtonStyle(
@@ -331,12 +332,9 @@ class LogInPageState extends State<LogInPage> {
                           .then((ok) {
                         if (ok) {
                           logIn();
-                          saveLogInData().then((ok) {
-                            print("保存成功");
-                            if (!ok) print("data Cache error");
-                          });
+                          saveLogInData();
                         } else {
-                          print("登录失败");
+                          print("failed to login");
                         }
                       });
                     }
