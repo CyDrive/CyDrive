@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'views/folder_view.dart';
 import 'views/channel_view.dart';
 import 'views/me_view.dart';
+import 'views/login_page.dart';
 import 'globals.dart';
 import 'dart:io';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -28,21 +29,21 @@ class MyApp extends StatelessWidget {
     // mimeTypeResolver.addExtension('md', 'text/plain');
 
     return MaterialApp(
-      title: 'CyDrive',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.deepPurple,
-      ),
-      home: MyHomePage(key: Key('home'), title: ''),
-    );
+        title: 'CyDrive',
+        theme: ThemeData(
+          // This is the theme of your application.
+          //
+          // Try running your application with "flutter run". You'll see the
+          // application has a blue toolbar. Then, without quitting the app, try
+          // changing the primarySwatch below to Colors.green and then invoke
+          // "hot reload" (press "r" in the console where you ran "flutter run",
+          // or simply save your changes to "hot reload" in a Flutter IDE).
+          // Notice that the counter didn't reset back to zero; the application
+          // is not restarted.
+          primarySwatch: Colors.deepPurple,
+        ),
+        // home: MyHomePage(key: Key('home'), title: ''),
+        home: LogInPage());
   }
 }
 
@@ -50,14 +51,7 @@ class MyHomePage extends StatefulWidget {
   // title is the current dir path
   // empty title => root path
   // and in the case display CyDrive
-  MyHomePage({Key key, this.title}) : super(key: key) {
-    getApplicationSupportDirectory().then((value) {
-      filesDirPath = value.path;
-    });
-    getTemporaryDirectory().then((value) {
-      filesCachePath = value.path + '/file_picker';
-    });
-  }
+  MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
 
@@ -74,21 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    Account account = Account(
-      email: 'test@cydrive.io',
-      password: passwordHash('hello_world'),
-    );
-    client.login(account: account).then((ok) {
-      if (ok) {
-        setState(() {
-          _files = client.listDir(widget.title);
-        });
-      } else if (!ok) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('failed to login')));
-      }
-    });
-
+    _files = client.listDir(widget.title);
     ReceiveSharingIntent.getMediaStream().listen(recvSharedFileHandle);
     ReceiveSharingIntent.getInitialMedia().then(recvSharedFileHandle);
   }
