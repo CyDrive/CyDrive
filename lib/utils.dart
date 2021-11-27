@@ -75,20 +75,75 @@ Widget buildSizeText(FileInfo fileInfo) {
   return Text(size.toStringAsFixed(2) + ' ' + units[unitIndex]);
 }
 
-Future<bool> showDeleteDialog(BuildContext context) {
+Future<int> showFileDeleteDialog(BuildContext context) {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        bool isDeleteRemote = false;
+        return AlertDialog(
+          title: Text('Delete', textAlign: TextAlign.center),
+          content: Column(children: [
+            Text("Make sure delete this file", textAlign: TextAlign.start),
+          ], mainAxisSize: MainAxisSize.min),
+          actions: [
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              StatefulBuilder(builder: (context, StateSetter setState) {
+                return Container(
+                    child: CheckboxListTile(
+                        dense: true,
+                        title: Text("Delete the remote file?",
+                            textAlign: TextAlign.start),
+                        value: isDeleteRemote,
+                        onChanged: (bool) {
+                          setState(() {
+                            isDeleteRemote = !isDeleteRemote;
+                          });
+                        }));
+              }),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Expanded(
+                      child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(0),
+                          child: Text('No'))),
+                  Expanded(
+                      child: TextButton(
+                          onPressed: () =>
+                              Navigator.of(context).pop(isDeleteRemote ? 2 : 1),
+                          child: Text('Yes')))
+                ],
+              )
+            ]),
+          ],
+        );
+      });
+}
+
+Future<bool> showTaskDeleteDialog(BuildContext context) {
   return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Delete'),
-          content: Text('Also delete the remote file?'),
+          title: Text('Delete', textAlign: TextAlign.center),
+          content: Column(children: [
+            Text("Make sure delete this task", textAlign: TextAlign.start),
+          ], mainAxisSize: MainAxisSize.min),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('No')),
-            TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text('Yes')),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Expanded(
+                      child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text('No'))),
+                  Expanded(
+                      child: TextButton(
+                          onPressed: () =>
+                              Navigator.of(context).pop(true),
+                          child: Text('Yes')))
+                ],
+              ),
           ],
         );
       });

@@ -126,7 +126,7 @@ class _TaskViewState extends State<TaskView> {
               if (file.existsSync()) {
                 file.deleteSync();
               }
-              showDeleteDialog(context).then((value) {
+              showTaskDeleteDialog(context).then((value) {
                 if (value) {
                   client.delete(task.fileInfo.filePath);
                 }

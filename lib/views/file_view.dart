@@ -105,17 +105,37 @@ class _FileViewState extends State<FileView> {
                     break;
 
                   case 'Delete':
-                    if (file.existsSync()) {
-                      file.deleteSync();
-                    }
-                    showDeleteDialog(context).then((value) {
-                      if (value) {
-                        client
-                            .delete(fileInfo.filePath)
-                            .whenComplete(() => widget.onStateChange());
-                      } else {
-                        widget.onStateChange();
+                    // if (file.existsSync()) {
+                    //   file.deleteSync();
+                    // }
+                    showFileDeleteDialog(context).then((value) {
+                      switch (value) {
+                        case 0:
+                          {
+                            widget.onStateChange();
+                          }
+                          break;
+                        case 1:
+                          {
+                            file.deleteSync();
+                            widget.onStateChange();
+                          }
+                          break;
+                        case 2:
+                          {
+                            file.deleteSync();
+                            client
+                                .delete(fileInfo.filePath)
+                                .whenComplete(() => widget.onStateChange());
+                          }
                       }
+                      //   if (value) {
+                      //     client
+                      //         .delete(fileInfo.filePath)
+                      //         .whenComplete(() => widget.onStateChange());
+                      //   } else {
+                      //     widget.onStateChange();
+                      //   }
                     });
                     break;
                 }
