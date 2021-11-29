@@ -69,14 +69,24 @@ class _ChannelViewState extends State<ChannelView> {
       // It's the message the current device sended
       return ListTile(
         title: Text(
-          message.sender,
-          textAlign: TextAlign.right,
-        ),
-        subtitle: Text(
           message.content,
           textAlign: TextAlign.right,
         ),
-        trailing: Icon(Icons.phone_android),
+        // subtitle: Text(
+        //   message.content,
+        //   textAlign: TextAlign.right,
+        // ),
+        trailing: Column(children: [
+          Icon(Icons.phone_android),
+          Container(
+              width: 50,
+              child: Text(
+                client.deviceName,
+                textScaleFactor: 0.7,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              )),
+        ]),
       );
     } else {
       // A message from another device
